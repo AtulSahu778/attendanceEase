@@ -1,258 +1,121 @@
-# AttendEase — UI Design Guide
+# AttendEase — UI Design Guide (iOS 17 Aesthetic)
 
 ## Design Philosophy
-Dark, minimal, data-first. Every screen has one job. No clutter.
+Pure black, immersive glass, and micro-interactions. The app strictly adheres to a premium iOS 17 aesthetic: no solid card colors, tightened system typography, and completely fluid press-scale animations.
 
 ---
 
-## Color Palette
+## 🎨 Token System
 
-| Token | Hex | Usage |
-|-------|-----|-------|
-| Background | `#0F172A` | All screen backgrounds |
-| Surface | `#1E293B` | Cards, inputs, pickers |
-| Border | `#334155` | Card borders, dividers |
-| Brand | `#2563EB` | Primary buttons, active tabs, accent |
-| Text Primary | `#FFFFFF` | Headings, values |
-| Text Secondary | `#94A3B8` | Labels, subtitles |
-| Text Muted | `#64748B` | Hints, timestamps |
-| Success | `#10B981` | ≥ 75% attendance |
-| Warning | `#F59E0B` | 65–74% attendance |
-| Danger | `#EF4444` | < 65% attendance |
+### Backgrounds & Glass
+| Token | Value | Usage |
+|-------|-------|-------|
+| Canvas | `#000000` | Absolute black for OLED screens everywhere |
+| Glass Card Core | `BlurView` `intensity: 40`, `tint: "dark"` | Foundation for all cards, inputs, and active UI |
+| Glass Picker/Menu | `BlurView` `intensity: 50`, `tint: "dark"` | Deeper blur for elevated dropdown menus |
+| Glass Shimmer | `rgba(255,255,255, 0.20)` | 1px top stroke on cards simulating light bleed |
+| Glass Outline | `rgba(255,255,255, 0.18)` | Standard card/input 1px border |
 
----
+### Semantic Status Colors
+State colors are paired with highly transparent, saturated ambient glows using `shadowColor` on glass cards.
 
-## Typography
+| State | Solid Color | Glow (Shadow/Badge) | Background Usage |
+|-------|-------------|---------------------|------------------|
+| **Present/Success** | `rgb(52, 199, 89)` | `rgba(52,199,89, 0.25)` | ≥ 75% thresholds |
+| **Late/Warning** | `rgb(255, 159, 10)` | `rgba(255,159,10, 0.20)` | 65–74% thresholds |
+| **Absent/Danger** | `rgb(255, 59, 48)` | `rgba(255,59,48, 0.20)` | < 65% thresholds |
 
-All text uses the system font (React Native default). No external fonts to avoid load failures.
+### Typography Tokens
+*All text uses default system fonts (`San Francisco` on iOS, `Roboto` on Android) to guarantee instant mounting without asset loading.*
 
-| Role | Size | Weight | Color |
-|------|------|--------|-------|
-| Screen title | 18px | Bold | White |
-| Hero heading | 24–28px | Bold | White |
-| Card heading | 16–17px | SemiBold | White |
-| Body | 15px | Regular | `#CBD5E1` |
-| Label | 13px | SemiBold | `#94A3B8` |
-| Caption | 11–12px | Regular | `#64748B` |
+| Role | Properties | Color |
+|------|------------|-------|
+| Hero Title | `24-28px`, `Bold 700`, `ls: -0.8` | `#FFFFFF` |
+| Screen Title| `18px`, `Bold 700`, `ls: -0.5` | `#FFFFFF` |
+| CTA Button | `16-17px`, `Bold 700`, `ls: -0.3` | `#000000` (on white bg) |
+| Card Title | `16-17px`, `SemiBold 600`, `ls: -0.4` | `#FFFFFF` |
+| Standard Body| `15px`, `Regular 400`, `ls: -0.2` | `rgba(255,255,255, 0.75)` |
+| Picker/Label | `13-15px`, `Medium 500`, `ls: -0.2` | `rgba(255,255,255, 0.55)` |
+| Muted Caption| `11-12px`, `Regular 400`, `ls: 0.1` | `rgba(255,255,255, 0.35)` |
 
----
-
-## Screen Breakdown
-
-### 1. Setup Screen (`/setup`)
-**Goal:** One-time onboarding.
-
-```
-┌──────────────────────────────┐
-│   [🏫 Icon]                  │
-│   AttendEase                 │  ← 28px bold
-│   "Set up to check with      │
-│    a single tap"             │  ← 15px muted
-│                              │
-│  ┌──────────────────────┐    │
-│  │ 🪪  Roll Number       │    │  ← TextInput, caps
-│  └──────────────────────┘    │
-│  ┌──────────────────────┐    │
-│  │ 📅  Semester IV   ▼  │    │  ← Dropdown picker
-│  └──────────────────────┘    │
-│  ┌──────────────────────┐    │
-│  │ 👤  Display Name     │    │  ← Optional
-│  └──────────────────────┘    │
-│                              │
-│  [   Get Started     ]       │  ← Brand blue CTA
-│  🔒 Stored securely...       │
-└──────────────────────────────┘
-```
-
-**Key choices:**
-- Roll number auto-uppercased
-- Semester picker expands inline (no modal)
-- Privacy note below CTA for trust
+*Note: `ls` = `letterSpacing`. Tight letter spacing (`-0.2` to `-0.8`) is mandatory for the iOS aesthetic.*
 
 ---
 
-### 2. Home Screen (`/home`)
-**Goal:** Single-tap attendance check.
+## 🎬 Animation System
 
-```
-┌──────────────────────────────┐
-│  Welcome back,               │
-│  Hello, Atul 👋         [⚙]  │  ← Settings icon
-│                              │
-│  ┌─── Blue Card ───────────┐ │
-│  │ 👤 Atul Sahu     [Sem IV]│ │
-│  │ 24VBIT057091            │ │
-│  │ 📅 Friday, 6 March 2026 │ │
-│  └─────────────────────────┘ │
-│                              │
-│  Attendance View             │
-│  ┌──────┬──────┬──────────┐  │
-│  │Overall│Daily │ Monthly  │  │  ← Tab selector
-│  └──────┴──────┴──────────┘  │
-│                              │
-│  ┌─── Last Result ─────────┐ │
-│  │  84.2%   Overall  ✅    │ │  ← Cached result card
-│  │  5 subjects • 3m ago    │ │
-│  └─────────────────────────┘ │
-│                              │
-│  [🔍  Check Attendance  ]    │  ← Primary CTA
-│  Last checked: 3m ago        │
-└──────────────────────────────┘
-```
+All interactions and screen transitions must be fluid and physics-based. 
 
-**Key choices:**
-- Blue student card reinforces brand
-- View mode tabs persist selection
-- Big CTA is always visible at bottom
+### 1. The "Press Scale" (Reanimated Spring)
+Every tappable element (cards, buttons, icons, settings rows) must use a spring-based scale compression on touch.
+* **Property:** `scale` transforms from `1` to `0.96` (or `0.985` for large cards).
+* **Timing (In):** `duration: 120ms` Linear/Easing.
+* **Timing (Out):** Spring physics (`damping: 15`).
+
+### 2. Staggered Entrance (Screen Mount)
+When complex screens (`home`, `result`) mount, their child rows must cascade inward rather than snapping instantly.
+* **Animation:** Parallel Fade (`opacity: 0 -> 1`) + Slide (`translateY: 16 -> 0`).
+* **Duration:** `480ms` with Native Driver.
+* **Stagger:** Delay incrementing by `50ms` per row.
+
+### 3. Progress Bars (`result.tsx`)
+* **Animation:** Width extrapolates from `0%` to `percentage`.
+* **Timing:** `800ms` duration, `300ms` base delay + `50ms` stagger per card.
+* **Aesthetic:** Saturated color fill with a high-opacity `.shadowColor` glow of the same color.
 
 ---
 
-### 3. Result Screen (`/result`)
-**Goal:** Show subject-wise attendance clearly.
+## 🧱 Key Component Recipes
 
-```
-┌──────────────────────────────┐
-│  [←]    Attendance    [🔄]   │
-│  ────────────────────────── │
-│  ┌─── Tabs ───────────────┐  │
-│  │ Overall │ Daily │Monthly│  │
-│  └────────────────────────┘  │
-│                              │
-│  ┌─── Student Card ───────┐  │
-│  │ 👤 ATUL SAHU           │  │
-│  │ Roll: 801 • Sem IV     │  │
-│  │ B.Sc.(Hons.) Info. Tech│  │
-│  └────────────────────────┘  │
-│                              │
-│  ┌─ 84.2% ─ Overall ──────┐  │
-│  │ 5 subjects • 43/51     │  │
-│  └────────────────────────┘  │
-│                              │
-│  Subject-wise Breakdown      │
-│  ┌────────────────────────┐  │
-│  │ DBMS              90% 🟢│  │
-│  │ ████████████░░  9/10   │  │  ← Animated bar
-│  ├────────────────────────┤  │
-│  │ Visual Basic .NET 66% 🟡│  │
-│  │ ████████░░░░░░  4/6    │  │
-│  └────────────────────────┘  │
-│                              │
-│  [ Open in Browser ]         │
-└──────────────────────────────┘
+### The Glass Card Base
+This is the universally standard container for content blocks (Stats, Subjects, Settings, Profiles).
+```tsx
+<BlurView intensity={40} tint="dark" style={s.glassCard}>
+  <View style={s.shimmerLine} /> {/* 1px rgba(255,255,255,0.2) positioned absolute top-0 */}
+  {/* Content */}
+</BlurView>
+
+// StyleSheet
+glassCard: {
+  backgroundColor: 'rgba(255,255,255,0.10)',
+  borderRadius: 20, 
+  borderWidth: 1, 
+  borderColor: 'rgba(255,255,255,0.18)',
+  overflow: 'hidden', 
+  padding: 16 // strict layout normalization
+}
 ```
 
-**Key choices:**
-- Color-coded by threshold: green ≥75, amber 65–74, red <65
-- Animated progress bars (800ms ease-in)
-- Each card shows Total / Present / Absent dots
-- Cached data shown with amber banner
-- Error states include inline retry
-
----
-
-### 4. Settings Screen (`/settings`)
-**Goal:** Edit profile, clear data, access portal.
-
-```
-┌──────────────────────────────┐
-│  [←]      Settings           │
-│                              │
-│  PROFILE                     │
-│  ┌──────────────────────┐    │
-│  │ 🪪  Roll Number       │    │
-│  └──────────────────────┘    │
-│  ┌──────────────────────┐    │
-│  │ 📅  Semester IV    ▼ │    │
-│  └──────────────────────┘    │
-│  ┌──────────────────────┐    │
-│  │ 👤  Display Name     │    │
-│  └──────────────────────┘    │
-│  [💾  Save Changes      ]    │  ← Turns green on save
-│                              │
-│  DATA                        │
-│  ┌──────────────────────────┐│
-│  │ 🗑  Clear Cached Data    ││  ← Confirm alert
-│  └──────────────────────────┘│
-│                              │
-│  ABOUT                       │
-│  ┌──────────────────────────┐│
-│  │ 🌐  College Portal  [↗] ││
-│  └──────────────────────────┘│
-│  ┌─ 🛡 Privacy ────────────┐ │
-│  │ Data stored encrypted.  │ │
-│  │ No third-party servers. │ │
-│  └─────────────────────────┘ │
-└──────────────────────────────┘
+### The Primary CTA Button
+CTAs are highly contrasted against the black background to command hierarchy.
+```tsx
+ctaButton: { 
+  backgroundColor: 'rgba(255,255,255,0.95)', // Nearly pure white
+  borderRadius: 16, 
+  paddingVertical: 18, 
+  alignItems: 'center', 
+  flexDirection: 'row', 
+  justifyContent: 'center', 
+  gap: 10, 
+  shadowColor: '#fff', 
+  shadowOpacity: 0.10, 
+  shadowRadius: 20, 
+  shadowOffset: { width: 0, height: 4 }, 
+  elevation: 8 
+}
 ```
 
 ---
 
-## Component Patterns
+## 📱 Screen Breakdown Highlights
 
-### Cards
-```
-backgroundColor: #1E293B
-borderRadius: 12
-borderWidth: 1
-borderColor: #334155
-padding: 16
-```
+1. **Setup (`/setup`)**: Single glass block for forms. Optional inputs clearly marked. Press-scale on the semester toggle revealing a nested inline glass picker.
+2. **Home (`/home`)**: Staggered mount. Glass semantic tabs (Overall, Daily, Monthly). Heavy use of `timeAgo` timestamps with muted captions inside a rapid-fetch visual block.
+3. **Result (`/result`)**: The most complex layout. A central hero percentage card projecting an intense semantic drop shadow. Staggered progress bars.
+4. **Settings (`/settings`)**: Profile inline edits. Glass `BlurView` inputs. Dedicated "Developer" section with GitHub/Instagram. "About/Privacy" section standardizing the "educational-only" legal disclaimer. Save button triggers an inline state change to Green `rgb(52,199,89)` on success.
 
-### Primary Button
-```
-backgroundColor: #2563EB
-borderRadius: 12–16
-paddingVertical: 16–20
-Text: white, 16–18px bold
-```
-
-### Input Fields
-```
-backgroundColor: #1E293B
-borderRadius: 12
-borderColor: #334155
-paddingVertical: 16
-Icon on left + TextInput
-```
-
-### Tab Selector
-```
-Container: #1E293B + border + borderRadius 12 + padding 4
-Active tab: #2563EB, borderRadius 8
-Inactive: transparent, text #94A3B8
-```
-
-### Percentage Color Logic
-```
->= 75%  →  #10B981 (green)   background: rgba(16,185,129, 0.12)
-65–74%  →  #F59E0B (amber)   background: rgba(245,158,11, 0.12)
-< 65%   →  #EF4444 (red)     background: rgba(239,68,68,  0.12)
-```
-
----
-
-## Navigation Flow
-```
-        ┌─────────┐
-        │  index  │  (redirector)
-        └────┬────┘
-     ┌────────┴────────┐
-     ▼                 ▼
-  /setup           /home ──────► /result
-  (no profile)     (has profile)    │
-                     ▲              │
-                     └── /settings ─┘
-```
-
-All transitions use `slide_from_right` animation.
-
----
-
-## State Colors Summary
-
-| State | Visual |
-|-------|--------|
-| Loading | Icon spin, button text "Fetching..." |
-| Cached data | Amber top banner with "Retry" |
-| Error | Red inline box with message + Retry |
-| Success save | Button turns `#059669` green briefly |
+## 📏 Layout Standards
+All screens strictly abide by a global horizontal rhythm. 
+* Side Padding/Margins: **24px** strict.
+* Vertical rhythm in forms: **14-16px** padding inside containers.
+* Component visual centering: Enforced via `flexDirection: 'row', alignItems: 'center'`. No floating text.

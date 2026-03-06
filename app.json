@@ -10,6 +10,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.attendease.app"
     },
+    "icon": "./assets/favicon_io/android-chrome-512x512.png",
     "android": {
       "package": "com.attendease.app",
       "adaptiveIcon": {
@@ -18,7 +19,8 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/favicon_io/favicon.ico"
     },
     "plugins": [
       "expo-router",
