@@ -144,6 +144,37 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </View>
 
+                {/* Developer Section */}
+                <View style={s.section}>
+                    <Text style={s.sectionLabel}>DEVELOPER</Text>
+
+                    <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.8}>
+                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center', marginBottom: 10 }]}>
+                            <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                                <Ionicons name="logo-github" size={19} color="rgba(255,255,255,0.7)" />
+                            </View>
+                            <View style={{ marginLeft: 14, flex: 1 }}>
+                                <Text style={s.rowTitle}>GitHub</Text>
+                                <Text style={s.caption}>@AtulSahu778</Text>
+                            </View>
+                            <Ionicons name="open-outline" size={16} color="rgba(255,255,255,0.25)" />
+                        </BlurView>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.8}>
+                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center' }]}>
+                            <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                                <Ionicons name="logo-instagram" size={19} color="rgba(255,255,255,0.7)" />
+                            </View>
+                            <View style={{ marginLeft: 14, flex: 1 }}>
+                                <Text style={s.rowTitle}>Instagram</Text>
+                                <Text style={s.caption}>@ofc_atul</Text>
+                            </View>
+                            <Ionicons name="open-outline" size={16} color="rgba(255,255,255,0.25)" />
+                        </BlurView>
+                    </TouchableOpacity>
+                </View>
+
                 {/* About Section */}
                 <View style={s.section}>
                     <Text style={s.sectionLabel}>ABOUT</Text>
@@ -162,7 +193,7 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
 
                     {/* Privacy Card */}
-                    <BlurView intensity={30} tint="dark" style={s.glassCard}>
+                    <BlurView intensity={30} tint="dark" style={[s.glassCard, { marginBottom: 10 }]}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
                             <Ionicons name="shield-checkmark" size={16} color="rgb(52,199,89)" />
                             <Text style={{ color: 'rgb(52,199,89)', fontSize: 13, fontWeight: '600', letterSpacing: -0.2 }}>Privacy</Text>
@@ -171,8 +202,20 @@ export default function SettingsScreen() {
                             Your roll number is stored encrypted on your device. No data is sent to third-party servers. The app only communicates with the SXC Ranchi portal.
                         </Text>
                     </BlurView>
+
+                    {/* Disclaimer Card */}
+                    <BlurView intensity={30} tint="dark" style={s.glassCard}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
+                            <Ionicons name="information-circle" size={16} color="rgba(255,255,255,0.7)" />
+                            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '600', letterSpacing: -0.2 }}>Disclaimer</Text>
+                        </View>
+                        <Text style={[s.caption, { lineHeight: 17 }]}>
+                            AttendEase is an unofficial, independent tool created strictly for educational purposes to help students track their own attendance. This application is not affiliated with, endorsed by, or connected to St. Xavier's College, Ranchi. No intellectual property of the college is used or harmed.
+                        </Text>
+                    </BlurView>
                 </View>
 
+                <View style={{ height: 40 }} />
             </ScrollView>
         </View>
     );
