@@ -52,7 +52,7 @@ function SubjectCard({ s, index }: { s: SubjectRow; index: number }) {
         <Animated.View style={[{ marginBottom: 12, transform: [{ scale: cardScale.scale }] }]}>
             <BlurView intensity={40} tint="dark" style={[st.glassCard, { shadowColor: color, shadowOpacity: 0.12, shadowRadius: 16 }]}>
                 <View style={st.shimmerLine} />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View style={{ flex: 1, marginRight: 14 }}>
                         <Text style={st.cardHeading} numberOfLines={2}>{s.subjectTitle}</Text>
                         <Text style={[st.caption, { fontFamily: 'monospace', marginTop: 4 }]}>{s.subjectCode}</Text>
@@ -253,18 +253,18 @@ const st = StyleSheet.create({
     header: { paddingTop: 58, paddingHorizontal: 24, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
     screenTitle: { fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
     iconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-    glassCard: { backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', overflow: 'hidden', padding: 16 },
+    glassCard: { backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', overflow: 'hidden', padding: 18 },
     shimmerLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.20)' },
     tab: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 12 },
     tabActive: { backgroundColor: 'rgba(255,255,255,0.18)' },
     tabText: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.35)', letterSpacing: -0.1 },
     tabTextActive: { color: '#fff', fontWeight: '600' },
     banner: { marginHorizontal: 24, marginTop: 10, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-    avatarCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
-    heroPctBox: { width: 76, height: 76, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+    avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
+    heroPctBox: { width: 72, height: 72, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
     heroPct: { fontSize: 22, fontWeight: '700', letterSpacing: -0.8 },
-    pctBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1 },
-    pctValue: { fontWeight: '700', fontSize: 16, letterSpacing: -0.4 },
+    pctBadge: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
+    pctValue: { fontWeight: '700', fontSize: 15, letterSpacing: -0.4 },
     cardHeading: { fontSize: 16, fontWeight: '600', color: '#fff', letterSpacing: -0.4 },
     sectionLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, color: 'rgba(255,255,255,0.35)' },
     bodyText: { fontSize: 15, color: 'rgba(255,255,255,0.75)', letterSpacing: -0.2 },
