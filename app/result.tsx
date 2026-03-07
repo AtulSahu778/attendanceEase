@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { ViewMode, SubjectRow } from '../types';
+import { DonationBanner, DonationModal } from '../components/Donation';
 
 const VIEW_MODES: { key: ViewMode; label: string }[] = [
     { key: 'overall', label: 'Overall' },
@@ -84,6 +85,7 @@ export default function ResultScreen() {
     const { attendanceResult, viewMode, setViewMode, selectedDate, setSelectedDate, fetchAttendance, isLoading, error, isCachedData, clearError } = useAppStore();
     const [showDateInput, setShowDateInput] = useState(false);
     const [dateInput, setDateInput] = useState(selectedDate);
+    const [showDonation, setShowDonation] = useState(false);
     const backScale = usePressScale();
     const refreshScale = usePressScale();
 
@@ -234,7 +236,8 @@ export default function ResultScreen() {
                     {attendanceResult.subjects.map((sub, i) => <SubjectCard key={sub.subjectCode + i} s={sub} index={i} />)}
 
                     {/* Open in Browser */}
-                    <TouchableOpacity onPress={openPortal} activeOpacity={0.8}>
+                    {/* <DonationBanner onPress={() => setShowDonation(true)} /> */}
+                    <TouchableOpacity onPress={openPortal} activeOpacity={0.8} style={{ marginTop: 12 }}>
                         <BlurView intensity={30} tint="dark" style={[st.glassCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 40, paddingVertical: 14 }]}>
                             <Ionicons name="open-outline" size={17} color="rgba(255,255,255,0.45)" />
                             <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '500', letterSpacing: -0.1 }}>Open in Browser</Text>
@@ -243,6 +246,8 @@ export default function ResultScreen() {
                     <View style={{ height: 100 }} />
                 </ScrollView>
             )}
+
+            <DonationModal visible={showDonation} onClose={() => setShowDonation(false)} />
         </View>
     );
 }

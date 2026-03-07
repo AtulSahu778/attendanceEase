@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { ViewMode } from '../types';
 import { getLastCacheTimestamp } from '../services/storage';
+import { DonationBanner, DonationModal } from '../components/Donation';
 
 const VIEW_MODES: { key: ViewMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { key: 'overall', label: 'Overall', icon: 'stats-chart' },
@@ -51,6 +52,7 @@ export default function HomeScreen() {
     const router = useRouter();
     const { profile, viewMode, setViewMode, fetchAttendance, isLoading, attendanceResult } = useAppStore();
     const [lastSynced, setLastSynced] = useState<string | null>(null);
+    const [showDonation, setShowDonation] = useState(false);
     const ctaScale = usePressScale(0.97);
     const gearScale = usePressScale();
 
@@ -158,7 +160,9 @@ export default function HomeScreen() {
                 )}
 
                 {/* CTA */}
-                <Animated.View style={[{ paddingHorizontal: 24, marginTop: 24 }, animCta]}>
+                <Animated.View style={[{ paddingHorizontal: 24, marginTop: 16 }, animCta]}>
+                    {/* <DonationBanner onPress={() => setShowDonation(true)} /> */}
+                    <View style={{ height: 20 }} />
                     <Animated.View style={{ transform: [{ scale: ctaScale.scale }] }}>
                         <TouchableOpacity
                             style={[s.ctaButton, isLoading && { opacity: 0.7 }]}
@@ -182,6 +186,8 @@ export default function HomeScreen() {
 
                 <View style={{ height: 120 }} />
             </ScrollView>
+
+            <DonationModal visible={showDonation} onClose={() => setShowDonation(false)} />
         </View>
     );
 }
