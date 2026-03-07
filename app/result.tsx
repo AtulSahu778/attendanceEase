@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, TextInput, Linking } from 'react-native';
-import { BlurView } from 'expo-blur';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,68 +13,54 @@ const VIEW_MODES: { key: ViewMode; label: string }[] = [
     { key: 'monthly', label: 'Monthly' },
 ];
 
-function pctColor(p: number) { return p >= 75 ? 'rgb(52,199,89)' : p >= 65 ? 'rgb(255,159,10)' : 'rgb(255,59,48)'; }
-function pctGlow(p: number) { return p >= 75 ? 'rgba(52,199,89,0.25)' : p >= 65 ? 'rgba(255,159,10,0.20)' : 'rgba(255,59,48,0.20)'; }
+function pctColor(p: number) {
+    if (p >= 85) return '#22C55E';
+    if (p >= 75) return '#9CA3AF';
+    return '#F59E0B';
+}
 function timeAgo(iso: string) {
     const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
     if (m < 1) return 'Just now'; if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`; return `${Math.floor(h / 24)}d ago`;
 }
-function usePressScale(to = 0.96) {
+function usePressScale(to = 0.98) {
     const scale = useRef(new Animated.Value(1)).current;
-    const onPressIn = () => Animated.timing(scale, { toValue: to, duration: 120, useNativeDriver: true }).start();
-    const onPressOut = () => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start();
+    const onPressIn = () => Animated.timing(scale, { toValue: to, duration: 100, useNativeDriver: true }).start();
+    const onPressOut = () => Animated.spring(scale, { toValue: 1, damping: 20, useNativeDriver: true }).start();
     return { scale, onPressIn, onPressOut };
 }
 
-function AnimatedProgressBar({ percentage, delay = 0 }: { percentage: number; delay?: number }) {
-    const anim = useRef(new Animated.Value(0)).current;
-    useEffect(() => {
-        Animated.timing(anim, { toValue: percentage, duration: 800, delay: 300 + delay, useNativeDriver: false }).start();
-    }, [percentage]);
+function AnimatedProgressBar({ percentage }: { percentage: number }) {
     const color = pctColor(percentage);
     return (
-        <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden', marginTop: 10 }}>
-            <Animated.View style={{
-                height: '100%', borderRadius: 2, backgroundColor: color,
-                width: anim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }),
-                shadowColor: color, shadowOpacity: 0.7, shadowRadius: 4,
-            }} />
+        <View style={st.progressBarTrack}>
+            <View style={[st.progressBarFill, { width: `${percentage}%`, backgroundColor: color }]} />
         </View>
     );
 }
 
-function SubjectCard({ s, index }: { s: SubjectRow; index: number }) {
-    const cardScale = usePressScale(0.985);
+function SubjectCard({ s }: { s: SubjectRow }) {
+    const cardScale = usePressScale(0.99);
     const color = pctColor(s.percentage);
-    const glow = pctGlow(s.percentage);
     return (
-        <Animated.View style={[{ marginBottom: 12, transform: [{ scale: cardScale.scale }] }]}>
-            <BlurView intensity={40} tint="dark" style={[st.glassCard, { shadowColor: color, shadowOpacity: 0.12, shadowRadius: 16 }]}>
-                <View style={st.shimmerLine} />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flex: 1, marginRight: 14 }}>
-                        <Text style={st.cardHeading} numberOfLines={2}>{s.subjectTitle}</Text>
-                        <Text style={[st.caption, { fontFamily: 'monospace', marginTop: 4 }]}>{s.subjectCode}</Text>
-                    </View>
-                    <View style={[st.pctBadge, { backgroundColor: glow, borderColor: color + '44' }]}>
-                        <Text style={[st.pctValue, { color }]}>{s.percentage.toFixed(1)}%</Text>
+        <Animated.View style={{ transform: [{ scale: cardScale.scale }], marginBottom: 16 }}>
+            <View style={st.card}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1, marginRight: 16 }}>
+                        <Text style={st.subjectTitle} numberOfLines={2}>{s.subjectTitle}</Text>
+                        <Text style={st.subjectCode}>{s.subjectCode}</Text>
                     </View>
                 </View>
-                <AnimatedProgressBar percentage={s.percentage} delay={index * 50} />
-                <View style={{ flexDirection: 'row', marginTop: 12, gap: 18 }}>
-                    {[
-                        { label: 'Total', val: s.totalClasses, color: 'rgba(255,255,255,0.45)' },
-                        { label: 'Present', val: s.totalPresent, color: 'rgb(52,199,89)' },
-                        { label: 'Absent', val: s.totalClasses - s.totalPresent, color: 'rgb(255,59,48)' },
-                    ].map((x) => (
-                        <View key={x.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                            <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: x.color, shadowColor: x.color, shadowOpacity: 0.8, shadowRadius: 4 }} />
-                            <Text style={st.caption}>{x.label}: <Text style={{ color: 'rgba(255,255,255,0.75)', fontWeight: '600' }}>{x.val}</Text></Text>
-                        </View>
-                    ))}
+
+                <AnimatedProgressBar percentage={s.percentage} />
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, alignItems: 'center' }}>
+                    <Text style={st.statsText}>
+                        Total: {s.totalClasses}   Present: {s.totalPresent}   Absent: {s.totalClasses - s.totalPresent}
+                    </Text>
+                    <Text style={[st.pctValue, { color }]}>{s.percentage.toFixed(1)}%</Text>
                 </View>
-            </BlurView>
+            </View>
         </Animated.View>
     );
 }
@@ -98,14 +83,9 @@ export default function ResultScreen() {
         setTimeout(() => setRetryCooldown(false), 5000);
     };
 
-    // Mount animation
     const fade = useRef(new Animated.Value(0)).current;
-    const slide = useRef(new Animated.Value(16)).current;
     useEffect(() => {
-        Animated.parallel([
-            Animated.timing(fade, { toValue: 1, duration: 480, useNativeDriver: true }),
-            Animated.timing(slide, { toValue: 0, duration: 480, useNativeDriver: true }),
-        ]).start();
+        Animated.timing(fade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
     }, []);
 
     useEffect(() => { fetchAttendance(false); }, [viewMode]);
@@ -119,55 +99,55 @@ export default function ResultScreen() {
 
 
             {/* Header */}
-            <Animated.View style={[st.header, { opacity: fade, transform: [{ translateY: slide }] }]}>
+            <Animated.View style={[st.header, { opacity: fade }]}>
                 <Animated.View style={{ transform: [{ scale: backScale.scale }] }}>
-                    <TouchableOpacity style={st.iconBtn} onPress={() => router.back()} onPressIn={backScale.onPressIn} onPressOut={backScale.onPressOut} activeOpacity={1}>
-                        <Ionicons name="arrow-back" size={20} color="white" />
+                    <TouchableOpacity style={st.iconBtn} onPress={() => router.back()} onPressIn={backScale.onPressIn} onPressOut={backScale.onPressOut} activeOpacity={0.8}>
+                        <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                 </Animated.View>
                 <Text style={st.screenTitle}>Attendance</Text>
                 <Animated.View style={{ transform: [{ scale: refreshScale.scale }] }}>
-                    <TouchableOpacity style={st.iconBtn} onPress={() => fetchAttendance(true)} onPressIn={refreshScale.onPressIn} onPressOut={refreshScale.onPressOut} activeOpacity={1} disabled={isLoading || retryCooldown}>
-                        <Ionicons name="refresh" size={20} color="rgba(255,255,255,0.5)" />
+                    <TouchableOpacity style={st.iconBtn} onPress={() => fetchAttendance(true)} onPressIn={refreshScale.onPressIn} onPressOut={refreshScale.onPressOut} activeOpacity={0.8} disabled={isLoading || retryCooldown}>
+                        <Ionicons name="refresh" size={20} color={isLoading ? "rgba(255,255,255,0.2)" : "#FFFFFF"} />
                     </TouchableOpacity>
                 </Animated.View>
             </Animated.View>
 
             {/* Tabs */}
-            <Animated.View style={[{ paddingHorizontal: 24, paddingTop: 12 }, { opacity: fade }]}>
-                <BlurView intensity={40} tint="dark" style={[st.glassCard, { flexDirection: 'row', padding: 4 }]}>
+            <Animated.View style={[{ paddingHorizontal: 16, paddingTop: 16 }, { opacity: fade }]}>
+                <View style={st.tabContainer}>
                     {VIEW_MODES.map((m) => (
                         <TouchableOpacity key={m.key} style={[st.tab, viewMode === m.key && st.tabActive]} onPress={() => setViewMode(m.key)} activeOpacity={0.8}>
                             <Text style={[st.tabText, viewMode === m.key && st.tabTextActive]}>{m.label}</Text>
                         </TouchableOpacity>
                     ))}
-                </BlurView>
+                </View>
 
                 {viewMode === 'daily' && (
-                    <TouchableOpacity onPress={() => setShowDateInput(!showDateInput)} style={{ marginTop: 10 }}>
-                        <BlurView intensity={30} tint="dark" style={[st.glassCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}>
+                    <TouchableOpacity onPress={() => setShowDateInput(!showDateInput)} style={{ marginTop: 12 }}>
+                        <View style={[st.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Ionicons name="calendar-outline" size={16} color="rgba(255,255,255,0.4)" />
-                                <Text style={st.bodyText}>{selectedDate}</Text>
+                                <Ionicons name="calendar-outline" size={16} color="#9CA3AF" />
+                                <Text style={st.textSecondary}>{selectedDate}</Text>
                             </View>
-                            <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.3)" />
-                        </BlurView>
+                            <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
+                        </View>
                     </TouchableOpacity>
                 )}
                 {viewMode === 'daily' && showDateInput && (
-                    <BlurView intensity={40} tint="dark" style={[st.glassCard, { marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 }]}>
+                    <View style={[st.card, { marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 }]}>
                         <TextInput
-                            style={[st.bodyText, { flex: 1, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }]}
-                            placeholder="YYYY-MM-DD" placeholderTextColor="rgba(255,255,255,0.25)"
+                            style={[st.bodyText, { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }]}
+                            placeholder="YYYY-MM-DD" placeholderTextColor="#6B7280"
                             value={dateInput} onChangeText={setDateInput}
                         />
                         <TouchableOpacity
-                            style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 9 }}
+                            style={{ backgroundColor: '#FFFFFF', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 }}
                             onPress={() => { setSelectedDate(dateInput); setShowDateInput(false); setTimeout(() => fetchAttendance(true), 100); }}
                         >
-                            <Text style={{ color: '#000', fontWeight: '700', fontSize: 13 }}>Go</Text>
+                            <Text style={{ color: '#000000', fontWeight: '600', fontSize: 13 }}>Go</Text>
                         </TouchableOpacity>
-                    </BlurView>
+                    </View>
                 )}
             </Animated.View>
 
@@ -205,54 +185,47 @@ export default function ResultScreen() {
 
             {/* Results */}
             {attendanceResult && !isLoading && (
-                <ScrollView style={{ flex: 1, paddingHorizontal: 24, marginTop: 12 }} showsVerticalScrollIndicator={false}>
+                <ScrollView style={{ flex: 1, paddingHorizontal: 16, marginTop: 16 }} showsVerticalScrollIndicator={false}>
 
                     {/* Student Card */}
-                    <BlurView intensity={40} tint="dark" style={[st.glassCard, { marginBottom: 12 }]}>
-                        <View style={st.shimmerLine} />
+                    <View style={[st.card, { marginBottom: 16 }]}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <BlurView intensity={30} tint="dark" style={st.avatarCircle}>
-                                <Ionicons name="person" size={22} color="white" />
-                            </BlurView>
-                            <View style={{ marginLeft: 14, flex: 1 }}>
-                                <Text style={st.cardHeading}>{attendanceResult.student.name}</Text>
-                                <Text style={st.caption}>Roll: {attendanceResult.student.classRollNumber} · Sem {attendanceResult.student.semester}</Text>
-                                <Text style={[st.caption, { marginTop: 2 }]}>{attendanceResult.student.courseName}</Text>
+                            <View style={st.avatarWrap}>
+                                <Ionicons name="person" size={20} color="#FFFFFF" />
+                            </View>
+                            <View style={{ marginLeft: 16, flex: 1 }}>
+                                <Text style={st.studentName}>{attendanceResult.student.name}</Text>
+                                <Text style={st.textSecondary}>Roll: {attendanceResult.student.classRollNumber} • Sem {attendanceResult.student.semester}</Text>
+                                <Text style={[st.textSecondary, { fontSize: 12, marginTop: 2 }]}>{attendanceResult.student.courseName}</Text>
                             </View>
                         </View>
-                    </BlurView>
+                    </View>
 
                     {/* Overall % Hero */}
-                    <BlurView intensity={40} tint="dark" style={[st.glassCard, {
-                        marginBottom: 16, flexDirection: 'row', alignItems: 'center',
-                        shadowColor: pctColor(overallPct), shadowOpacity: 0.2, shadowRadius: 20,
-                    }]}>
-                        <View style={st.shimmerLine} />
-                        <View style={[st.heroPctBox, { backgroundColor: pctGlow(overallPct), borderColor: pctColor(overallPct) + '44' }]}>
+                    <View style={[st.card, { marginBottom: 24, flexDirection: 'row', alignItems: 'center' }]}>
+                        <View style={{ flex: 1 }}>
                             <Text style={[st.heroPct, { color: pctColor(overallPct) }]}>{overallPct.toFixed(1)}%</Text>
-                        </View>
-                        <View style={{ marginLeft: 16, flex: 1 }}>
-                            <Text style={st.cardHeading}>Overall Attendance</Text>
-                            <Text style={st.caption}>
-                                {attendanceResult.subjects.reduce((a, r) => a + r.totalPresent, 0)}/
-                                {attendanceResult.subjects.reduce((a, r) => a + r.totalClasses, 0)} classes
+                            <Text style={st.textSecondary}>
+                                {attendanceResult.subjects.reduce((a, r) => a + r.totalPresent, 0)} / {attendanceResult.subjects.reduce((a, r) => a + r.totalClasses, 0)} classes
                             </Text>
-                            <Text style={st.caption}>{attendanceResult.subjects.length} subjects</Text>
+                            <Text style={st.textSecondary}>{attendanceResult.subjects.length} subjects</Text>
                         </View>
-                    </BlurView>
+                        <View style={{ width: 100, height: 6, backgroundColor: '#1F1F1F', borderRadius: 3, overflow: 'hidden' }}>
+                            <View style={{ width: `${overallPct}%`, height: '100%', backgroundColor: pctColor(overallPct) }} />
+                        </View>
+                    </View>
 
-                    <Text style={[st.sectionLabel, { marginBottom: 12 }]}>SUBJECT-WISE BREAKDOWN</Text>
-                    {attendanceResult.subjects.map((sub, i) => <SubjectCard key={sub.subjectCode + i} s={sub} index={i} />)}
+                    {/* Subjects list */}
+                    {attendanceResult.subjects.map((sub, i) => <SubjectCard key={sub.subjectCode + i} s={sub} />)}
 
                     {/* Open in Browser */}
-                    {/* <DonationBanner onPress={() => setShowDonation(true)} /> */}
-                    <TouchableOpacity onPress={openPortal} activeOpacity={0.8} style={{ marginTop: 12 }}>
-                        <BlurView intensity={30} tint="dark" style={[st.glassCard, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 40, paddingVertical: 14 }]}>
-                            <Ionicons name="open-outline" size={17} color="rgba(255,255,255,0.45)" />
-                            <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '500', letterSpacing: -0.1 }}>Open in Browser</Text>
-                        </BlurView>
+                    <TouchableOpacity onPress={openPortal} activeOpacity={0.8} style={{ marginTop: 8 }}>
+                        <View style={[st.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 40, paddingVertical: 16 }]}>
+                            <Ionicons name="open-outline" size={16} color="#9CA3AF" />
+                            <Text style={{ color: '#9CA3AF', fontWeight: '500', fontSize: 14 }}>Open in Browser</Text>
+                        </View>
                     </TouchableOpacity>
-                    <View style={{ height: 100 }} />
+                    <View style={{ height: 80 }} />
                 </ScrollView>
             )}
 
@@ -262,25 +235,34 @@ export default function ResultScreen() {
 }
 
 const st = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: '#000' },
+    screen: { flex: 1, backgroundColor: '#0B0B0B' },
 
-    header: { paddingTop: 58, paddingHorizontal: 24, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
-    screenTitle: { fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
-    iconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-    glassCard: { backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', overflow: 'hidden', padding: 18 },
-    shimmerLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.20)' },
-    tab: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 12 },
-    tabActive: { backgroundColor: 'rgba(255,255,255,0.18)' },
-    tabText: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.35)', letterSpacing: -0.1 },
-    tabTextActive: { color: '#fff', fontWeight: '600' },
-    banner: { marginHorizontal: 24, marginTop: 10, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-    avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', overflow: 'hidden' },
-    heroPctBox: { width: 72, height: 72, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-    heroPct: { fontSize: 22, fontWeight: '700', letterSpacing: -0.8 },
-    pctBadge: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1 },
-    pctValue: { fontWeight: '700', fontSize: 15, letterSpacing: -0.4 },
-    cardHeading: { fontSize: 16, fontWeight: '600', color: '#fff', letterSpacing: -0.4 },
-    sectionLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, color: 'rgba(255,255,255,0.35)' },
-    bodyText: { fontSize: 15, color: 'rgba(255,255,255,0.75)', letterSpacing: -0.2 },
-    caption: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2, letterSpacing: 0.1 },
+    header: { paddingTop: 64, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+    screenTitle: { fontSize: 18, fontWeight: '600', color: '#FFFFFF', letterSpacing: -0.3 },
+    iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+
+    card: { backgroundColor: '#121212', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 16 },
+    avatarWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1F1F1F', alignItems: 'center', justifyContent: 'center' },
+    studentName: { fontSize: 18, fontWeight: '600', color: '#FFFFFF', letterSpacing: -0.3 },
+
+    heroPct: { fontSize: 42, fontWeight: '700', letterSpacing: -1 },
+
+    tabContainer: { flexDirection: 'row', backgroundColor: '#121212', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    tab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8 },
+    tabActive: { backgroundColor: '#262626' },
+    tabText: { fontSize: 14, fontWeight: '500', color: '#9CA3AF' },
+    tabTextActive: { color: '#FFFFFF', fontWeight: '600' },
+
+    banner: { marginHorizontal: 16, marginTop: 16, borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
+
+    subjectTitle: { fontSize: 16, fontWeight: '600', color: '#FFFFFF', letterSpacing: -0.2 },
+    subjectCode: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
+    statsText: { fontSize: 12, color: '#9CA3AF' },
+    pctValue: { fontWeight: '700', fontSize: 14 },
+
+    progressBarTrack: { height: 6, backgroundColor: '#1F1F1F', borderRadius: 3, marginTop: 16, overflow: 'hidden' },
+    progressBarFill: { height: '100%', borderRadius: 3 },
+
+    bodyText: { fontSize: 15, color: '#FFFFFF' },
+    textSecondary: { fontSize: 14, color: '#9CA3AF', marginTop: 2 },
 });
