@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Linking } from 'react-native';
 
 import { useRouter } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { ViewMode } from '../types';
@@ -173,8 +174,22 @@ export default function HomeScreen() {
                     )}
                 </Animated.View>
 
-                <View style={{ height: 120 }} />
             </ScrollView>
+
+            {/* Footer — pinned at screen bottom */}
+            <BlurView intensity={40} tint="dark" style={{ alignItems: 'center', paddingVertical: 16, backgroundColor: 'rgba(255,255,255,0.04)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 0.5, fontWeight: '500' }}>
+                        Built by Atul
+                    </Text>
+                    <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
+                        <Ionicons name="logo-github" size={15} color="rgba(255,255,255,0.4)" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
+                        <Ionicons name="logo-instagram" size={15} color="rgba(255,255,255,0.4)" />
+                    </TouchableOpacity>
+                </View>
+            </BlurView>
 
             <DonationModal visible={showDonation} onClose={() => setShowDonation(false)} />
         </View>
