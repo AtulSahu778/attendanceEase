@@ -1,20 +1,89 @@
-# AttendEase System Workflow Documentation
+# AttendEase
 
-## Overview
-AttendEase is a React Native mobile application built with Expo Router that helps students track their attendance from the St. Xavier's College Ranchi portal. The app provides a premium iOS 17-inspired dark UI with real-time attendance fetching, caching, and rate limiting.
+<div align="center">
+  <img src="assets/favicon_io/android-chrome-512x512.png" alt="AttendEase Logo" width="120" height="120" />
+  
+  <p>A premium React Native mobile application built with Expo Router that helps students track their attendance from the St. Xavier's College Ranchi portal.</p>
+
+  <p>
+    <a href="#features">Features</a> •
+    <a href="#tech-stack">Tech Stack</a> •
+    <a href="#getting-started">Getting Started</a> •
+    <a href="#system-architecture--workflows">Architecture & Workflows</a>
+  </p>
+</div>
+
+---
+
+## Features
+
+- **Real-Time Tracking**: Get up-to-date attendance metrics directly from the college portal.
+- **Three View Modes**: Check your **Overall**, **Daily**, or **Monthly** attendance.
+- **Premium UI/UX**: Enjoy a sleek, iOS 17-inspired dark mode interface with glassmorphism components and fluid animations.
+- **Smart Caching**: AsyncStorage caches your attendance per view mode for instant loads and offline resilience.
+- **Rate Limiting Protection**: A built-in three-layer rate limiter prevents server overload and duplicate requests.
+- **Secure Profiles**: User profiles are encrypted using `expo-secure-store`.
+- **Error Recovery**: Graceful degradation to cached data with clear warnings when the network fails.
+
+---
 
 ## Tech Stack
-- **Framework**: React Native (0.76.9) with Expo (~52.0.0)
-- **Routing**: Expo Router (~4.0.0) for file-based navigation
-- **State Management**: Zustand (^4.5.0) for global state
-- **Storage**: 
-  - AsyncStorage for attendance cache
-  - Expo SecureStore for encrypted profile data
-- **UI**: NativeWind (^4.0.1) with custom glass morphism components
-- **Styling**: Tailwind CSS + StyleSheet API
-- **TypeScript**: Full type safety across the codebase
 
-## Architecture Overview
+- **Framework**: React Native (0.76.9) with Expo (~52.0.0)
+- **Routing**: Expo Router (~4.0.0)
+- **State Management**: Zustand (^4.5.0)
+- **Storage**: AsyncStorage (Caching) & Expo SecureStore (Profiles)
+- **Styling**: NativeWind (^4.0.1) & Tailwind CSS
+- **TypeScript**: Full end-to-end type safety
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js installed
+- Yarn or npm installed
+- Expo Go app on your physical device, or an iOS Simulator / Android Emulator
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/AtulSahu778/attendanceEase.git
+   cd attendanceEase
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+### Running the App
+
+Start the Expo development server:
+```bash
+npx expo start
+```
+
+- Press `a` to open in an Android emulator.
+- Press `i` to open in an iOS simulator.
+- Scan the QR code with the Expo Go app to test on a physical device.
+
+#### Web Development (with proxy)
+If you want to run the app on the web, you need to start the proxy to bypass CORS restrictions:
+
+```bash
+# Terminal 1: Start proxy server
+node proxy.js
+
+# Terminal 2: Start Expo web
+npx expo start --web
+```
+
+---
+
+## System Architecture & Workflows
 
 ### Directory Structure
 ```
@@ -45,8 +114,6 @@ assets/                # Static resources
 ├── images/
 └── favicon_io/
 ```
-
-## Core System Workflows
 
 ### 1. Application Initialization Flow
 
@@ -195,25 +262,9 @@ Return structured data
 
 **Three-Layer Protection:**
 
-1. **Global Rate Limit**
-   - Max 5 requests per 60-second sliding window
-   - Prevents server overload
-
-2. **Per-Endpoint Cooldown**
-   - 30-second minimum gap between identical requests
-   - Prevents duplicate fetches
-
-3. **In-Flight Deduplication**
-   - Returns same Promise for concurrent identical requests
-   - Prevents race conditions
-
-**Implementation:**
-```typescript
-// State tracking
-requestTimestamps: number[]           // Global window
-lastRequestMap: Map<string, number>   // Per-endpoint cooldown
-inflightMap: Map<string, Promise>     // Deduplication
-```
+1. **Global Rate Limit**: Max 5 requests per 60-second window.
+2. **Per-Endpoint Cooldown**: 30-second minimum gap between identical requests.
+3. **In-Flight Deduplication**: Returns same Promise for concurrent identical requests.
 
 ### 6. Caching Strategy
 
@@ -221,68 +272,22 @@ inflightMap: Map<string, Promise>     // Deduplication
 - **Profile**: SecureStore (encrypted, persistent)
 - **Attendance**: AsyncStorage (unencrypted, per view mode)
 
-**Cache Keys:**
-```
-Profile: "student_profile"
-Attendance: "attendance_cache_{viewMode}"
-```
-
 **Freshness Rules:**
 - Overall: 5 minutes
 - Monthly: 5 minutes
 - Daily: 10 minutes
 
-**Cache Behavior:**
-```
-Fetch Request
-    ↓
-Check cache freshness
-    ↓
-If fresh → Return cached data
-    ↓
-If stale → Fetch new data
-    ↓
-On error → Fallback to cached data (with warning)
-```
-
 ### 7. View Mode System
 
 **Three View Modes:**
 
-1. **Overall**
-   - Shows cumulative attendance across all subjects
-   - Aggregates total classes and present count
-   - Default view mode
-
-2. **Daily**
-   - Shows attendance for a specific date
-   - User can select custom date (YYYY-MM-DD)
-   - Aggregates multiple periods per subject
-
-3. **Monthly**
-   - Shows attendance aggregated by month
-   - Sums classes across all months per subject
-
-**Data Transformation:**
-```
-API Response (snake_case)
-    ↓
-Parse & validate
-    ↓
-Aggregate by subject
-    ↓
-Calculate percentages
-    ↓
-Transform to SubjectRow[]
-    ↓
-Calculate overall percentage
-    ↓
-Store as AttendanceResult
-```
+1. **Overall**: Shows cumulative attendance across all subjects.
+2. **Daily**: Shows attendance for a specific user-selected date (YYYY-MM-DD).
+3. **Monthly**: Shows attendance aggregated by month per subject.
 
 ### 8. State Management (Zustand)
 
-**Store Structure:**
+**Store Structure (`useAppStore.ts`):**
 ```typescript
 interface AppState {
   // Profile
@@ -309,60 +314,7 @@ interface AppState {
 }
 ```
 
-**State Flow:**
-```
-Component triggers action
-    ↓
-Zustand action updates state
-    ↓
-Service layer called (if needed)
-    ↓
-State updated with result
-    ↓
-All subscribed components re-render
-```
-
-### 9. UI Animation System
-
-**Animation Types:**
-
-1. **Press Scale**
-   - All interactive elements compress on touch
-   - Scale: 1 → 0.96 (120ms) → 1 (spring)
-   - Creates tactile feedback
-
-2. **Staggered Entrance**
-   - Screen elements fade + slide in
-   - Opacity: 0 → 1, TranslateY: 16 → 0
-   - 480ms duration, 50ms stagger per element
-
-3. **Progress Bars**
-   - Width animates from 0% to percentage
-   - 800ms duration, 300ms delay + 50ms stagger
-   - Color-coded with glow effects
-
-**Implementation Pattern:**
-```typescript
-function usePressScale(to = 0.96) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const onPressIn = () => Animated.timing(...).start();
-  const onPressOut = () => Animated.spring(...).start();
-  return { scale, onPressIn, onPressOut };
-}
-```
-
-### 10. Error Recovery System
-
-**Error Types & Recovery Actions:**
-
-| Error Type | User Message | Recovery Action |
-|------------|--------------|-----------------|
-| NETWORK_ERROR | Connection issue | Retry button |
-| TIMEOUT_ERROR | Request timed out | Retry button |
-| EMPTY_RESULT | No data found | Check settings |
-| PARSE_ERROR | Invalid response | Retry button |
-| RATE_LIMIT_ERROR | Too many requests | Wait timer |
-| UNKNOWN_ERROR | Unexpected error | Retry button |
+### 9. Error Recovery System
 
 **Recovery Flow:**
 ```
@@ -378,155 +330,27 @@ If cached exists:
 If no cache:
   - Display error message
   - Show recovery action
-  - Clear error on retry
 ```
 
-## Data Flow Diagrams
+### 10. Security Considerations
 
-### Complete Attendance Fetch Flow
-```
-[User Action] → [Store Action] → [Rate Limiter] → [API Client]
-                                                        ↓
-[UI Update] ← [Store Update] ← [Cache Write] ← [Response Parse]
-     ↓
-[Navigate to Result]
-```
-
-### Profile Management Flow
-```
-[Setup Screen] → [Validation] → [Store Action] → [SecureStore Write]
-                                                        ↓
-[Home Screen] ← [Navigation] ← [State Update] ← [Encryption]
-```
-
-## Security Considerations
-
-1. **Profile Encryption**
-   - Roll numbers stored in SecureStore (Keychain/Keystore)
-   - Platform-specific secure storage
-   - No cloud sync
-
-2. **API Communication**
-   - Direct HTTPS to college portal (native)
-   - Local proxy for web (CORS bypass)
-   - No third-party servers
-
-3. **Input Validation**
-   - All user inputs sanitized
-   - SQL injection prevention
-   - XSS protection
-
-4. **Rate Limiting**
-   - Prevents abuse
-   - Protects college portal
-   - Client-side enforcement
-
-## Platform-Specific Behavior
-
-### Web
-- Uses localStorage for profile (no SecureStore)
-- Requires local proxy server (proxy.js)
-- CORS bypass via http://localhost:3001
-
-### Native (iOS/Android)
-- Uses SecureStore for profile encryption
-- Direct API calls to college portal
-- No CORS restrictions
-
-## Performance Optimizations
-
-1. **Request Deduplication**
-   - Prevents duplicate concurrent requests
-   - Shares Promise across components
-
-2. **Caching Strategy**
-   - Reduces API calls
-   - Instant data display
-   - Offline support
-
-3. **Lazy Loading**
-   - Components load on demand
-   - Reduced initial bundle size
-
-4. **Native Driver Animations**
-   - GPU-accelerated animations
-   - 60fps performance
-   - Smooth interactions
-
-## Development Workflow
-
-### Local Development
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-
-# Run on specific platform
-npm run ios
-npm run android
-npm run web
-```
-
-### Web Development (with proxy)
-```bash
-# Terminal 1: Start proxy server
-node proxy.js
-
-# Terminal 2: Start Expo
-npm run web
-```
-
-## Future Enhancement Opportunities
-
-1. **Notifications**
-   - Push notifications for low attendance
-   - Daily attendance reminders
-
-2. **Analytics**
-   - Attendance trends
-   - Prediction algorithms
-   - Subject-wise insights
-
-3. **Multi-Profile**
-   - Support multiple students
-   - Profile switching
-
-4. **Offline Mode**
-   - Full offline functionality
-   - Sync when online
-
-5. **Export Features**
-   - PDF reports
-   - CSV export
-   - Share functionality
-
-## Troubleshooting Guide
-
-### Common Issues
-
-1. **"No data found" error**
-   - Verify roll number format
-   - Check semester selection
-   - Ensure college portal is accessible
-
-2. **Rate limit errors**
-   - Wait 30 seconds between requests
-   - Clear app cache if persistent
-
-3. **Cached data warning**
-   - Network connectivity issue
-   - College portal down
-   - Retry when connection restored
-
-4. **Web CORS errors**
-   - Ensure proxy server is running
-   - Check proxy.js configuration
-   - Verify localhost:3001 is accessible
+1. **Profile Encryption**: Roll numbers stored in SecureStore (Keychain/Keystore). No cloud sync.
+2. **API Communication**: Direct HTTPS to college portal (native). Local proxy for web (CORS bypass). No third-party servers.
+3. **Input Validation**: All user inputs sanitized to prevent injection attacks.
+4. **Rate Limiting**: Protects both the user and the college portal from abuse.
 
 ---
 
-**Last Updated**: March 7, 2026
-**Version**: 1.0.0
-**Maintainer**: Atul Sahu (@AtulSahu778)
+## Future Enhancement Opportunities
+
+- **Notifications**: Push notifications for low attendance and daily reminders.
+- **Analytics**: Subject-wise insights and prediction algorithms.
+- **Multi-Profile**: Seamlessly support and switch between multiple students.
+- **Offline Mode**: Full offline functionality with background sync.
+- **Export Features**: Export reports to PDF or CSV.
+
+---
+
+**Last Updated**: March 7, 2026  
+**License**: MIT  
+**Maintainer**: Atul Sahu ([@AtulSahu778](https://github.com/AtulSahu778))
