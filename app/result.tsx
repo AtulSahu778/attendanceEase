@@ -86,8 +86,17 @@ export default function ResultScreen() {
     const [showDateInput, setShowDateInput] = useState(false);
     const [dateInput, setDateInput] = useState(selectedDate);
     const [showDonation, setShowDonation] = useState(false);
+    const [retryCooldown, setRetryCooldown] = useState(false);
     const backScale = usePressScale();
     const refreshScale = usePressScale();
+
+    const handleRetry = () => {
+        if (retryCooldown) return;
+        setRetryCooldown(true);
+        clearError();
+        fetchAttendance(true);
+        setTimeout(() => setRetryCooldown(false), 5000);
+    };
 
     // Mount animation
     const fade = useRef(new Animated.Value(0)).current;
@@ -99,7 +108,7 @@ export default function ResultScreen() {
         ]).start();
     }, []);
 
-    useEffect(() => { fetchAttendance(); }, [viewMode]);
+    useEffect(() => { fetchAttendance(false); }, [viewMode]);
 
     const openPortal = () => Linking.openURL('https://sxcran.ac.in/Student/AttendanceSummary');
 
@@ -118,7 +127,7 @@ export default function ResultScreen() {
                 </Animated.View>
                 <Text style={st.screenTitle}>Attendance</Text>
                 <Animated.View style={{ transform: [{ scale: refreshScale.scale }] }}>
-                    <TouchableOpacity style={st.iconBtn} onPress={() => fetchAttendance()} onPressIn={refreshScale.onPressIn} onPressOut={refreshScale.onPressOut} activeOpacity={1}>
+                    <TouchableOpacity style={st.iconBtn} onPress={() => fetchAttendance(true)} onPressIn={refreshScale.onPressIn} onPressOut={refreshScale.onPressOut} activeOpacity={1} disabled={isLoading || retryCooldown}>
                         <Ionicons name="refresh" size={20} color="rgba(255,255,255,0.5)" />
                     </TouchableOpacity>
                 </Animated.View>
@@ -154,7 +163,7 @@ export default function ResultScreen() {
                         />
                         <TouchableOpacity
                             style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 9 }}
-                            onPress={() => { setSelectedDate(dateInput); setShowDateInput(false); setTimeout(() => fetchAttendance(), 100); }}
+                            onPress={() => { setSelectedDate(dateInput); setShowDateInput(false); setTimeout(() => fetchAttendance(true), 100); }}
                         >
                             <Text style={{ color: '#000', fontWeight: '700', fontSize: 13 }}>Go</Text>
                         </TouchableOpacity>
@@ -169,8 +178,8 @@ export default function ResultScreen() {
                     <Text style={{ color: 'rgb(255,159,10)', fontSize: 11, flex: 1, marginLeft: 8 }}>
                         Cached from {timeAgo(attendanceResult.fetchedAt)}
                     </Text>
-                    <TouchableOpacity onPress={() => fetchAttendance()}>
-                        <Text style={{ color: 'rgb(255,159,10)', fontWeight: '700', fontSize: 12 }}>Retry</Text>
+                    <TouchableOpacity onPress={handleRetry} disabled={retryCooldown}>
+                        <Text style={{ color: retryCooldown ? 'rgba(255,159,10,0.4)' : 'rgb(255,159,10)', fontWeight: '700', fontSize: 12 }}>{retryCooldown ? 'Wait…' : 'Retry'}</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -180,8 +189,8 @@ export default function ResultScreen() {
                 <View style={[st.banner, { backgroundColor: 'rgba(255,59,48,0.12)', borderColor: 'rgba(255,59,48,0.30)' }]}>
                     <Text style={{ color: 'rgb(255,59,48)', fontWeight: '600', marginBottom: 6 }}>Error</Text>
                     <Text style={{ color: 'rgba(255,100,90,0.9)', fontSize: 13, marginBottom: 10 }}>{error.message}</Text>
-                    <TouchableOpacity style={{ backgroundColor: 'rgba(255,59,48,0.2)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, alignSelf: 'flex-start' }} onPress={() => { clearError(); fetchAttendance(); }}>
-                        <Text style={{ color: 'rgb(255,59,48)', fontWeight: '600', fontSize: 12 }}>Retry</Text>
+                    <TouchableOpacity style={{ backgroundColor: retryCooldown ? 'rgba(255,59,48,0.1)' : 'rgba(255,59,48,0.2)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, alignSelf: 'flex-start' }} onPress={handleRetry} disabled={retryCooldown}>
+                        <Text style={{ color: retryCooldown ? 'rgba(255,59,48,0.4)' : 'rgb(255,59,48)', fontWeight: '600', fontSize: 12 }}>{retryCooldown ? 'Wait 5s…' : 'Retry'}</Text>
                     </TouchableOpacity>
                 </View>
             )}

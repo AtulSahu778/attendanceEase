@@ -89,3 +89,28 @@ export async function clearAllCache(): Promise<void> {
     const keys = ['overall', 'daily', 'monthly'].map((m) => `${CACHE_KEY_PREFIX}${m}`);
     await AsyncStorage.multiRemove(keys);
 }
+
+// ─── Cache freshness check ───
+
+const CACHE_MAX_AGE: Record<string, number> = {
+    overall: 5 * 60_000,   // 5 minutes
+    monthly: 5 * 60_000,   // 5 minutes
+    daily: 10 * 60_000,   // 10 minutes
+};
+
+export async function isCacheFresh(viewMode: string): Promise<boolean> {
+    try {
+        const key = `${CACHE_KEY_PREFIX}${viewMode}`;
+        const data = await AsyncStorage.getItem(key);
+        if (!data) return false;
+
+        const result = JSON.parse(data) as AttendanceResult;
+        if (!result.fetchedAt) return false;
+
+        const age = Date.now() - new Date(result.fetchedAt).getTime();
+        const maxAge = CACHE_MAX_AGE[viewMode] ?? 5 * 60_000;
+        return age < maxAge;
+    } catch {
+        return false;
+    }
+}

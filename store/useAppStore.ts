@@ -8,6 +8,7 @@ import {
     cacheResult,
     getCachedResult,
     getProfile as getProfileFromStore,
+    isCacheFresh,
     saveProfile as saveProfileToStore,
 } from '../services/storage';
 import {
@@ -33,13 +34,14 @@ interface AppState {
     isLoading: boolean;
     error: AppError | null;
     isCachedData: boolean;
+    lastFetchAttempt: number; // timestamp of last fetch attempt (for UI cooldown)
 
     // Actions
     loadProfile: () => Promise<void>;
     setProfile: (profile: StudentProfile) => Promise<void>;
     setViewMode: (mode: ViewMode) => void;
     setSelectedDate: (date: string) => void;
-    fetchAttendance: () => Promise<void>;
+    fetchAttendance: (forceRefresh?: boolean) => Promise<void>;
     clearError: () => void;
 }
 
@@ -61,6 +63,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     isLoading: false,
     error: null,
     isCachedData: false,
+    lastFetchAttempt: 0,
 
     // ─── Load profile from secure storage ───
     loadProfile: async () => {
@@ -83,12 +86,31 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ selectedDate: date });
     },
 
-    // ─── Fetch attendance ───
-    fetchAttendance: async () => {
-        const { profile, viewMode, selectedDate } = get();
+    // ─── Fetch attendance (with cache-first & concurrency guard) ───
+    fetchAttendance: async (forceRefresh = false) => {
+        const { profile, viewMode, selectedDate, isLoading } = get();
         if (!profile) return;
 
-        set({ isLoading: true, error: null, isCachedData: false });
+        // Prevent concurrent fetches
+        if (isLoading) return;
+
+        // Cache-first: if not forcing refresh, check if cache is still fresh
+        if (!forceRefresh) {
+            const fresh = await isCacheFresh(viewMode);
+            if (fresh) {
+                const cached = await getCachedResult(viewMode);
+                if (cached) {
+                    set({
+                        attendanceResult: cached,
+                        isCachedData: true,
+                        error: null,
+                    });
+                    return;
+                }
+            }
+        }
+
+        set({ isLoading: true, error: null, isCachedData: false, lastFetchAttempt: Date.now() });
 
         try {
             let result: { student: StudentInfo; subjects: SubjectRow[] };
@@ -130,7 +152,19 @@ export const useAppStore = create<AppState>((set, get) => ({
                 isCachedData: false,
             });
         } catch (err: any) {
-            // Try to load cached data on error
+            // Handle rate limit errors gracefully — don't overwrite existing results
+            if (err?.type === 'RATE_LIMIT_ERROR') {
+                const { attendanceResult } = get();
+                set({
+                    isLoading: false,
+                    error: err as AppError,
+                    // Keep existing data visible if we have it
+                    isCachedData: !!attendanceResult,
+                });
+                return;
+            }
+
+            // Try to load cached data on other errors
             const cached = await getCachedResult(viewMode);
             if (cached) {
                 set({

@@ -60,6 +60,7 @@ export type AppErrorType =
     | 'TIMEOUT_ERROR'
     | 'EMPTY_RESULT'
     | 'PARSE_ERROR'
+    | 'RATE_LIMIT_ERROR'
     | 'UNKNOWN_ERROR';
 
 export interface AppError {
