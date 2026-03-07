@@ -7,7 +7,7 @@ const BASE_URL = Platform.OS === 'web'
     ? 'http://localhost:3001/api/Student'
     : 'https://sxcran.ac.in/Student';
 
-const TIMEOUT_MS = 12000;
+const TIMEOUT_MS = 8000;
 
 const HEADERS = {
     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',

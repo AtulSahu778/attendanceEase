@@ -64,8 +64,8 @@ export default function HomeScreen() {
 
     useEffect(() => { getLastCacheTimestamp().then(setLastSynced); }, [attendanceResult]);
 
-    const handleCheck = async () => {
-        await fetchAttendance(true);
+    const handleCheck = () => {
+        fetchAttendance(true);
         router.push('/result');
     };
 
