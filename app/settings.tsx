@@ -57,7 +57,7 @@ export default function SettingsScreen() {
                 <View style={{ width: 38 }} />
             </View>
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
 
                 {/* Profile Section */}
                 <View style={s.section}>

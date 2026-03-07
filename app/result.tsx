@@ -240,7 +240,7 @@ export default function ResultScreen() {
                             <Text style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '500', letterSpacing: -0.1 }}>Open in Browser</Text>
                         </BlurView>
                     </TouchableOpacity>
-                    <View style={{ height: 20 }} />
+                    <View style={{ height: 100 }} />
                 </ScrollView>
             )}
         </View>

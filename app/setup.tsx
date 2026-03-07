@@ -84,7 +84,7 @@ export default function SetupScreen() {
                                     <Ionicons name="id-card-outline" size={20} color="rgba(255,255,255,0.4)" />
                                     <TextInput
                                         style={s.textInput}
-                                        placeholder="e.g. 24VBIT057091"
+                                        placeholder="Roll Number"
                                         placeholderTextColor="rgba(255,255,255,0.25)"
                                         value={rollNumber}
                                         onChangeText={setRollNumber}
