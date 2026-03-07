@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Linking, StyleSheet, Animated } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,7 @@ function usePressScale(to = 0.97) {
 
 export default function SettingsScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { profile, setProfile } = useAppStore();
     const [rollNumber, setRollNumber] = useState(profile?.rollNumber || '');
     const [semester, setSemester] = useState(profile?.semester || 'I');
@@ -47,7 +49,7 @@ export default function SettingsScreen() {
 
 
             {/* Header */}
-            <View style={s.header}>
+            <View style={[s.header, { paddingTop: Math.max(insets.top + 10, 58) }]}>
                 <Animated.View style={{ transform: [{ scale: backScale.scale }] }}>
                     <TouchableOpacity style={s.iconBtn} onPress={() => router.back()} onPressIn={backScale.onPressIn} onPressOut={backScale.onPressOut} activeOpacity={1}>
                         <Ionicons name="arrow-back" size={20} color="white" />
@@ -57,7 +59,7 @@ export default function SettingsScreen() {
                 <View style={{ width: 38 }} />
             </View>
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 100, 120) }} showsVerticalScrollIndicator={false}>
 
                 {/* Profile Section */}
                 <View style={s.section}>
@@ -161,6 +163,19 @@ export default function SettingsScreen() {
                         </BlurView>
                     </TouchableOpacity>
 
+                    <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/atulsahu/')} activeOpacity={0.8}>
+                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center', marginBottom: 10 }]}>
+                            <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                                <Ionicons name="logo-linkedin" size={19} color="rgba(255,255,255,0.7)" />
+                            </View>
+                            <View style={{ marginLeft: 14, flex: 1 }}>
+                                <Text style={s.rowTitle}>LinkedIn</Text>
+                                <Text style={s.caption}>@atulsahu</Text>
+                            </View>
+                            <Ionicons name="open-outline" size={16} color="rgba(255,255,255,0.25)" />
+                        </BlurView>
+                    </TouchableOpacity>
+
                     <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.8}>
                         <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center' }]}>
                             <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
@@ -216,22 +231,30 @@ export default function SettingsScreen() {
                 </View>
 
 
-            </ScrollView>
+                {/* Spacer */}
+                <View style={{ height: 40 }} />
 
-            {/* Footer — pinned at screen bottom */}
-            <BlurView intensity={40} tint="dark" style={{ alignItems: 'center', paddingVertical: 16, backgroundColor: 'rgba(255,255,255,0.04)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 0.5, fontWeight: '500' }}>
-                        Built by Atul
-                    </Text>
-                    <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
-                        <Ionicons name="logo-github" size={15} color="rgba(255,255,255,0.4)" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
-                        <Ionicons name="logo-instagram" size={15} color="rgba(255,255,255,0.4)" />
-                    </TouchableOpacity>
+                {/* Footer — pill at the bottom of scroll content */}
+                <View style={{ alignItems: 'center', paddingBottom: 24 }}>
+                    <BlurView intensity={20} tint="dark" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 0.3, fontWeight: '500', marginRight: 16 }}>
+                            Built by Atul
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
+                                <Ionicons name="logo-github" size={16} color="rgba(255,255,255,0.5)" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/atulsahu/')} activeOpacity={0.6}>
+                                <Ionicons name="logo-linkedin" size={16} color="rgba(255,255,255,0.5)" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
+                                <Ionicons name="logo-instagram" size={16} color="rgba(255,255,255,0.5)" />
+                            </TouchableOpacity>
+                        </View>
+                    </BlurView>
                 </View>
-            </BlurView>
+
+            </ScrollView>
         </View>
     );
 }
@@ -239,7 +262,7 @@ export default function SettingsScreen() {
 const s = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#000' },
 
-    header: { paddingTop: 58, paddingHorizontal: 24, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
+    header: { paddingHorizontal: 24, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)' },
     screenTitle: { fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: -0.5 },
     iconBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
     section: { paddingHorizontal: 24, paddingTop: 28 },

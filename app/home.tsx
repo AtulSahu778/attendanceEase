@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Linking
 
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { ViewMode } from '../types';
@@ -49,6 +50,7 @@ function useFade(delay = 0) {
 
 export default function HomeScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const { profile, viewMode, setViewMode, fetchAttendance, isLoading, attendanceResult } = useAppStore();
     const [lastSynced, setLastSynced] = useState<string | null>(null);
     const [showDonation, setShowDonation] = useState(false);
@@ -75,10 +77,10 @@ export default function HomeScreen() {
         <View style={s.screen}>
 
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom + 100, 120) }} showsVerticalScrollIndicator={false}>
 
                 {/* Header */}
-                <Animated.View style={[s.headerRow, animHeader]}>
+                <Animated.View style={[s.headerRow, animHeader, { paddingTop: Math.max(insets.top + 16, 64) }]}>
                     <View>
                         <Text style={s.welcomeLabel}>Welcome back</Text>
                         <Text style={s.heroName}>{profile?.displayName || 'Student'}</Text>
@@ -174,22 +176,29 @@ export default function HomeScreen() {
                     )}
                 </Animated.View>
 
+                {/* Spacer */}
+                <View style={{ height: 40 }} />
             </ScrollView>
 
-            {/* Footer — pinned at screen bottom */}
-            <BlurView intensity={40} tint="dark" style={{ alignItems: 'center', paddingVertical: 16, backgroundColor: 'rgba(255,255,255,0.04)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 0.5, fontWeight: '500' }}>
+            {/* Footer — floating pill at bottom */}
+            <View pointerEvents="box-none" style={{ position: 'absolute', bottom: Math.max(insets.bottom + 16, 16), left: 0, right: 0, alignItems: 'center' }}>
+                <BlurView intensity={20} tint="dark" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 0.3, fontWeight: '500', marginRight: 16 }}>
                         Built by Atul
                     </Text>
-                    <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
-                        <Ionicons name="logo-github" size={15} color="rgba(255,255,255,0.4)" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
-                        <Ionicons name="logo-instagram" size={15} color="rgba(255,255,255,0.4)" />
-                    </TouchableOpacity>
-                </View>
-            </BlurView>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                        <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
+                            <Ionicons name="logo-github" size={16} color="rgba(255,255,255,0.5)" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/atulsahu/')} activeOpacity={0.6}>
+                            <Ionicons name="logo-linkedin" size={16} color="rgba(255,255,255,0.5)" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
+                            <Ionicons name="logo-instagram" size={16} color="rgba(255,255,255,0.5)" />
+                        </TouchableOpacity>
+                    </View>
+                </BlurView>
+            </View>
 
             <DonationModal visible={showDonation} onClose={() => setShowDonation(false)} />
         </View>
@@ -199,7 +208,7 @@ export default function HomeScreen() {
 const s = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#0B0B0B' },
 
-    headerRow: { paddingTop: 64, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    headerRow: { paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     welcomeLabel: { fontSize: 14, color: '#9CA3AF', marginBottom: 4 },
     heroName: { fontSize: 24, fontWeight: '600', color: '#FFFFFF', letterSpacing: -0.5 },
     gearBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },

@@ -4,6 +4,7 @@ import {
     KeyboardAvoidingView, Platform, Alert, StyleSheet, Animated,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,7 @@ export default function SetupScreen() {
     const [showSemPicker, setShowSemPicker] = useState(false);
     const { setProfile } = useAppStore();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const ctaScale = usePressScale(0.97);
     const semScale = usePressScale();
@@ -66,7 +68,7 @@ export default function SetupScreen() {
                     <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
                         {/* Header */}
-                        <View style={s.header}>
+                        <View style={[s.header, { paddingTop: Math.max(insets.top + 20, 72) }]}>
                             <BlurView intensity={40} tint="dark" style={s.iconWrap}>
                                 <Ionicons name="school" size={38} color="white" />
                             </BlurView>
@@ -152,7 +154,7 @@ export default function SetupScreen() {
                         </View>
 
                         {/* CTA */}
-                        <View style={{ paddingHorizontal: 24, marginTop: 16, marginBottom: 40 }}>
+                        <View style={{ flex: 1, justifyContent: 'flex-end', paddingHorizontal: 24, paddingBottom: Math.max(insets.bottom + 16, 40), marginTop: 24 }}>
                             <Animated.View style={{ transform: [{ scale: ctaScale.scale }] }}>
                                 <TouchableOpacity
                                     style={s.ctaButton}
@@ -181,7 +183,7 @@ export default function SetupScreen() {
 const s = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#000' },
 
-    header: { paddingTop: 72, paddingBottom: 40, alignItems: 'center', paddingHorizontal: 24 },
+    header: { paddingBottom: 40, alignItems: 'center', paddingHorizontal: 24 },
     iconWrap: {
         width: 80, height: 80, borderRadius: 22,
         alignItems: 'center', justifyContent: 'center',

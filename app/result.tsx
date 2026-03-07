@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { ViewMode, SubjectRow } from '../types';
 import { DonationBanner, DonationModal } from '../components/Donation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const VIEW_MODES: { key: ViewMode; label: string }[] = [
     { key: 'overall', label: 'Overall' },
@@ -72,6 +73,7 @@ export default function ResultScreen() {
     const [dateInput, setDateInput] = useState(selectedDate);
     const [showDonation, setShowDonation] = useState(false);
     const [retryCooldown, setRetryCooldown] = useState(false);
+    const insets = useSafeAreaInsets();
     const backScale = usePressScale();
     const refreshScale = usePressScale();
 
@@ -99,7 +101,7 @@ export default function ResultScreen() {
 
 
             {/* Header */}
-            <Animated.View style={[st.header, { opacity: fade }]}>
+            <Animated.View style={[st.header, { opacity: fade, paddingTop: Math.max(insets.top + 16, 64) }]}>
                 <Animated.View style={{ transform: [{ scale: backScale.scale }] }}>
                     <TouchableOpacity style={st.iconBtn} onPress={() => router.back()} onPressIn={backScale.onPressIn} onPressOut={backScale.onPressOut} activeOpacity={0.8}>
                         <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
@@ -185,7 +187,7 @@ export default function ResultScreen() {
 
             {/* Results */}
             {attendanceResult && !isLoading && (
-                <ScrollView style={{ flex: 1, paddingHorizontal: 16, marginTop: 16 }} showsVerticalScrollIndicator={false}>
+                <ScrollView style={{ flex: 1, paddingHorizontal: 16, marginTop: 16 }} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 40, 80) }} showsVerticalScrollIndicator={false}>
 
                     {/* Student Card */}
                     <View style={[st.card, { marginBottom: 16 }]}>
@@ -237,7 +239,7 @@ export default function ResultScreen() {
 const st = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#0B0B0B' },
 
-    header: { paddingTop: 64, paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+    header: { paddingHorizontal: 16, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
     screenTitle: { fontSize: 18, fontWeight: '600', color: '#FFFFFF', letterSpacing: -0.3 },
     iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#121212', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
 

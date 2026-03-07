@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
 
 SplashScreen.preventAutoHideAsync();
@@ -28,21 +29,23 @@ export default function RootLayout() {
     }, [isOnboarded, segments]);
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#000' }}>
-            <StatusBar style="light" />
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: '#000' },
-                    animation: 'slide_from_right',
-                }}
-            >
-                <Stack.Screen name="setup" />
-                <Stack.Screen name="home" />
-                <Stack.Screen name="result" />
-                <Stack.Screen name="settings" />
-            </Stack>
+        <SafeAreaProvider>
+            <View style={{ flex: 1, backgroundColor: '#000' }}>
+                <StatusBar style="light" />
+                <Stack
+                    screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: '#000' },
+                        animation: 'slide_from_right',
+                    }}
+                >
+                    <Stack.Screen name="setup" />
+                    <Stack.Screen name="home" />
+                    <Stack.Screen name="result" />
+                    <Stack.Screen name="settings" />
+                </Stack>
 
-        </View>
+            </View>
+        </SafeAreaProvider>
     );
 }
