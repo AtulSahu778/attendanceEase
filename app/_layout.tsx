@@ -18,6 +18,7 @@ export default function RootLayout() {
         loadProfile().then(() => {
             SplashScreen.hideAsync();
         });
+
         // Check for OTA updates on launch
         checkForUpdates();
     }, []);

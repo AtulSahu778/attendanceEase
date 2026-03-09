@@ -20,11 +20,11 @@ const PRIVACY_POINTS = [
         description: 'Your roll number and attendance data remain securely on your device. Nothing is uploaded anywhere.',
     },
     {
-        icon: 'eye-off-outline' as const,
+        icon: 'analytics-outline' as const,
         iconColor: '#A855F7', // Purple
         bgColor: 'rgba(168,85,247,0.12)',
-        title: 'No User Tracking',
-        description: 'The app does not track users, collect usage analytics, or profile behavior in any way.',
+        title: 'Anonymous Diagnostics',
+        description: 'To improve stability, we collect anonymous usage counts (like app opens) and crash reports. We never track your roll number, attendance, or personal behavior.',
     },
     {
         icon: 'shield-checkmark-outline' as const,
