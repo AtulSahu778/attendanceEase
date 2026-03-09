@@ -19,11 +19,14 @@
 
 - **Real-Time Tracking**: Get up-to-date attendance metrics directly from the college portal.
 - **Three View Modes**: Check your **Overall**, **Daily**, or **Monthly** attendance.
-- **Premium UI/UX**: Enjoy a sleek, iOS 17-inspired dark mode interface with glassmorphism components and fluid animations.
+- **Premium UI/UX**: Sleek, iOS-inspired dark mode interface with glassmorphism components and fluid animations.
 - **Smart Caching**: AsyncStorage caches your attendance per view mode for instant loads and offline resilience.
-- **Rate Limiting Protection**: A built-in three-layer rate limiter prevents server overload and duplicate requests.
-- **Secure Profiles**: User profiles are encrypted using `expo-secure-store`.
-- **Error Recovery**: Graceful degradation to cached data with clear warnings when the network fails.
+- **Advanced Rate Limiting**: Three-layer protection (daily limit, burst detection, deduplication) with anti-scraping safeguards.
+- **Auto Name Fetch**: On setup, your name is automatically fetched from the college API when you enter your roll number.
+- **OTA Updates**: Over-the-air update support via `expo-updates` — bug fixes delivered without reinstalling the app.
+- **Privacy Controls**: Full data deletion, request transparency stats, and a dedicated Privacy Notice screen.
+- **Error Recovery**: Graceful degradation to cached data with visible warnings when the network fails.
+- **Cooldown Timer**: Visible countdown prevents rate-limit abuse while informing the user.
 
 ---
 
@@ -32,8 +35,9 @@
 - **Framework**: React Native (0.76.9) with Expo (~52.0.0)
 - **Routing**: Expo Router (~4.0.0)
 - **State Management**: Zustand (^4.5.0)
-- **Storage**: AsyncStorage (Caching) & Expo SecureStore (Profiles)
+- **Storage**: AsyncStorage (profiles, cache, rate-limiter state)
 - **Styling**: NativeWind (^4.0.1) & Tailwind CSS
+- **OTA Updates**: expo-updates
 - **TypeScript**: Full end-to-end type safety
 
 ---
@@ -88,17 +92,19 @@ npx expo start --web
 ### Directory Structure
 ```
 app/                    # Screen components (file-based routing)
-├── _layout.tsx        # Root layout with navigation setup
+├── _layout.tsx        # Root layout with navigation + OTA update check
 ├── index.tsx          # Entry redirect logic
-├── setup.tsx          # Onboarding screen
+├── setup.tsx          # Onboarding screen (with auto name fetch)
 ├── home.tsx           # Main dashboard
 ├── result.tsx         # Attendance results display
-└── settings.tsx       # Profile & app settings
+├── settings.tsx       # Profile & app settings
+└── privacy.tsx        # Privacy notice screen
 
 services/              # Business logic layer
-├── attendanceApi.ts   # API client for college portal
-├── rateLimiter.ts     # Request throttling & deduplication
-└── storage.ts         # Persistent data management
+├── attendanceApi.ts   # API client for college portal + fetchStudentName()
+├── rateLimiter.ts     # Multi-layer throttling, anti-scraping & transparency
+├── storage.ts         # Persistent data management (AsyncStorage)
+└── updateService.ts   # OTA update checks (auto + manual)
 
 store/                 # State management
 └── useAppStore.ts     # Zustand store with all app state
@@ -108,11 +114,6 @@ types/                 # TypeScript definitions
 
 components/            # Reusable UI components
 └── Donation.tsx       # Donation banner/modal
-
-assets/                # Static resources
-├── fonts/
-├── images/
-└── favicon_io/
 ```
 
 ### 1. Application Initialization Flow
@@ -124,19 +125,14 @@ _layout.tsx loads
     ↓
 useAppStore.loadProfile() called
     ↓
-Profile loaded from SecureStore
+Profile loaded from AsyncStorage
     ↓
-SplashScreen hidden
+SplashScreen hidden + OTA update check (background)
     ↓
 Navigation guard checks isOnboarded
     ↓
 Route to /setup OR /home
 ```
-
-**Key Components:**
-- `_layout.tsx`: Root layout managing navigation and global footer
-- `useAppStore.loadProfile()`: Loads encrypted profile from device storage
-- Navigation guard: Redirects based on onboarding status
 
 ### 2. Onboarding Flow (Setup Screen)
 
@@ -145,63 +141,45 @@ User opens app (first time)
     ↓
 Redirected to /setup
     ↓
-User enters:
-  - Roll Number (validated, uppercase)
-  - Semester (Roman numerals I-VIII)
-  - Display Name (optional)
+User enters Roll Number
     ↓
-Validation checks:
-  - Roll number not empty
-  - Valid format (alphanumeric)
+[On blur] fetchStudentName() called → auto-fills Display Name from API
     ↓
-Profile saved to SecureStore (encrypted)
+User selects Semester + confirms display name
     ↓
-isOnboarded = true
+Validation: roll number not empty, valid format (alphanumeric)
     ↓
-Navigate to /home
+Profile saved to AsyncStorage
+    ↓
+isOnboarded = true → Navigate to /home
 ```
 
 **Validation Rules:**
 - Roll number: Alphanumeric, max 20 chars, uppercase
-- Semester: Must match predefined options (I-VIII)
-- Display name: Optional, no validation
-
-**Storage:**
-```typescript
-interface StudentProfile {
-  rollNumber: string;
-  semester: string;
-  displayName?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-```
+- Semester: Must match predefined options (I–VIII)
+- Display name: Auto-fetched from API; editable, optional
 
 ### 3. Attendance Fetching Workflow
 
 ```
 User clicks "Check Attendance"
     ↓
-useAppStore.fetchAttendance() triggered
+useAppStore.fetchAttendance(forceRefresh=true)
     ↓
-Rate limiter checks:
-  - Global limit (5 req/60s)
-  - Per-endpoint cooldown (30s)
+Rapid-click guard: if 5+ taps in 15s → apply 30s cooldown
+    ↓
+Rate limiter checks (burst limit, daily limit, anti-scraping)
     ↓
 Request deduplication check
     ↓
 API call based on viewMode:
-  - overall → fetchOverallAttendance()
-  - daily → fetchDailyAttendance()
-  - monthly → fetchMonthlyAttendance()
+  - overall  → fetchOverallAttendance()
+  - daily    → fetchDailyAttendance()
+  - monthly  → fetchMonthlyAttendance()
     ↓
 Response validation & parsing
     ↓
-Calculate overall percentage
-    ↓
 Cache result to AsyncStorage
-    ↓
-Update UI with new data
     ↓
 Navigate to /result
 
@@ -209,9 +187,7 @@ Navigate to /result
     ↓
 Try loading cached data
     ↓
-Display cached data with warning banner
-    OR
-Display error with retry option
+Display cached data with warning banner  OR  Display error with retry option
 ```
 
 ### 4. API Communication Layer
@@ -219,75 +195,69 @@ Display error with retry option
 **Endpoint Structure:**
 ```
 BASE_URL (Platform-dependent):
-  - Web: http://localhost:3001/api/Student (via proxy)
-  - Native: https://sxcran.ac.in/Student (direct)
+  - Web:    http://localhost:3001/api/Student  (via CORS proxy)
+  - Native: https://sxcran.ac.in/Student      (direct HTTPS)
 
 Endpoints:
   - POST /showOverallAttendance
-  - POST /showDailyAttendance  
+  - POST /showDailyAttendance
   - POST /showMonthlyAttendance
 ```
 
-**Request Flow:**
-```
-attendanceApi.ts
-    ↓
-Input validation (roll number, semester, date)
-    ↓
-rateLimiter.rateLimitedFetch()
-    ↓
-Check global rate limit
-    ↓
-Check per-endpoint cooldown
-    ↓
-Deduplicate in-flight requests
-    ↓
-fetchWithTimeout() (12s timeout)
-    ↓
-Retry logic (max 2 retries on transient errors)
-    ↓
-Parse & transform response
-    ↓
-Return structured data
-```
-
 **Error Handling:**
-- Network errors → Retry with exponential backoff
-- Timeout errors → Retry with exponential backoff
-- Empty results → Show user-friendly message
-- Parse errors → Fallback to cached data
-- Rate limit errors → Show cooldown timer
+| Error Type | Recovery |
+|---|---|
+| Network error | Retry, fall back to cache |
+| Timeout (8s) | Retry, fall back to cache |
+| Empty result | User-friendly message |
+| Rate limit | Show cooldown timer |
+| Abuse detected | Block further requests |
 
 ### 5. Rate Limiting System
 
 **Three-Layer Protection:**
 
-1. **Global Rate Limit**: Max 5 requests per 60-second window.
-2. **Per-Endpoint Cooldown**: 30-second minimum gap between identical requests.
-3. **In-Flight Deduplication**: Returns same Promise for concurrent identical requests.
+1. **Burst Limit**: 8 requests per 60-second sliding window.
+2. **Daily Limit**: Max 50 requests per day (persisted in AsyncStorage, resets at midnight).
+3. **In-Flight Deduplication**: Returns the same Promise for concurrent identical requests.
+4. **Anti-Scraping**: Blocks access if more than 10 unique roll numbers are queried in a day.
+5. **UI Cooldown**: After 5 rapid manual taps (within 15s), a 30-second visible cooldown is applied on the home screen CTA.
+
+**Transparency Stats (visible in Settings):**
+- API Requests Today: `X / 50`
+- Last Data Fetch: `Xm ago`
+- Local Cache Age: `Xm ago`
 
 ### 6. Caching Strategy
 
-**Cache Layers:**
-- **Profile**: SecureStore (encrypted, persistent)
-- **Attendance**: AsyncStorage (unencrypted, per view mode)
+| Data | Storage | TTL |
+|---|---|---|
+| Student Profile | AsyncStorage (`student_profile`) | Persistent |
+| Overall attendance | AsyncStorage | 5 min |
+| Monthly attendance | AsyncStorage | 5 min |
+| Daily attendance | AsyncStorage | 10 min |
 
-**Freshness Rules:**
-- Overall: 5 minutes
-- Monthly: 5 minutes
-- Daily: 10 minutes
+### 7. Privacy & Data Management
 
-### 7. View Mode System
+- **No External Servers**: All data is fetched directly from the college portal. Nothing is stored or routed through third-party servers.
+- **Delete My Data**: Wipes all AsyncStorage data (profile + cache + rate-limiter counters) in a single call. On web, also clears `localStorage`.
+- **Privacy Notice**: Accessible from Settings → Privacy Notice (`/privacy` screen).
+- **Roll Number Lock**: Roll number is locked after setup and requires a confirmation dialog to edit.
 
-**Three View Modes:**
+### 8. OTA Update System
 
-1. **Overall**: Shows cumulative attendance across all subjects.
-2. **Daily**: Shows attendance for a specific user-selected date (YYYY-MM-DD).
-3. **Monthly**: Shows attendance aggregated by month per subject.
+- **Auto-check on launch**: `checkForUpdates()` runs silently in `_layout.tsx` on every app start. If an update is available, it is downloaded and the user is prompted to reload.
+- **Manual check**: Settings → Check for Updates triggers `checkForUpdatesManual()` with user-facing alerts.
+- **Dev guards**: Both functions are no-ops in development / Expo Go (`__DEV__` guard). Real OTA requires a production/EAS build.
 
-### 8. State Management (Zustand)
+```bash
+# Build for EAS Update
+npx eas build
+npx expo update   # publish a JS update
+```
 
-**Store Structure (`useAppStore.ts`):**
+### 9. State Management (Zustand)
+
 ```typescript
 interface AppState {
   // Profile
@@ -303,54 +273,39 @@ interface AppState {
   isLoading: boolean;
   error: AppError | null;
   isCachedData: boolean;
+  cooldownEnd: number;     // timestamp for visible countdown
+  fetchAttempts: number;   // rapid-tap counter
 
   // Actions
   loadProfile()
   setProfile()
   setViewMode()
   setSelectedDate()
-  fetchAttendance()
+  fetchAttendance(forceRefresh?)
   clearError()
+  deleteAllData()
 }
-```
-
-### 9. Error Recovery System
-
-**Recovery Flow:**
-```
-Error occurs
-    ↓
-Check for cached data
-    ↓
-If cached exists:
-  - Display cached data
-  - Show warning banner
-  - Offer retry option
-    ↓
-If no cache:
-  - Display error message
-  - Show recovery action
 ```
 
 ### 10. Security Considerations
 
-1. **Profile Encryption**: Roll numbers stored in SecureStore (Keychain/Keystore). No cloud sync.
+1. **Profile Storage**: Roll number and semester stored in AsyncStorage (not SecureStore, which had unreliable deletion on some devices).
 2. **API Communication**: Direct HTTPS to college portal (native). Local proxy for web (CORS bypass). No third-party servers.
-3. **Input Validation**: All user inputs sanitized to prevent injection attacks.
-4. **Rate Limiting**: Protects both the user and the college portal from abuse.
+3. **Input Validation**: All user inputs sanitized and validated before use.
+4. **Rate Limiting + Anti-Scraping**: Protects the college portal from automated abuse.
+5. **Data Deletion**: Single `AsyncStorage.clear()` call atomically removes all app data.
 
 ---
 
-## Future Enhancement Opportunities
+## Future Enhancements
 
 - **Notifications**: Push notifications for low attendance and daily reminders.
 - **Analytics**: Subject-wise insights and prediction algorithms.
-- **Multi-Profile**: Seamlessly support and switch between multiple students.
-- **Offline Mode**: Full offline functionality with background sync.
-- **Export Features**: Export reports to PDF or CSV.
+- **Multi-Profile**: Support and switch between multiple students.
+- **Export Features**: Export attendance reports to PDF or CSV.
 
 ---
 
-**Last Updated**: March 7, 2026  
+**Last Updated**: March 9, 2026  
 **License**: MIT  
 **Maintainer**: Atul Sahu ([@AtulSahu778](https://github.com/AtulSahu778))

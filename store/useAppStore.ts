@@ -138,7 +138,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                 newFetchAttempts = 1;
             }
 
-            if (newFetchAttempts >= 2) {
+            if (newFetchAttempts >= 5) {
                 newCooldownEnd = now + COOLDOWN_MS;
                 newFetchAttempts = 0; // reset after triggering cooldown
             }

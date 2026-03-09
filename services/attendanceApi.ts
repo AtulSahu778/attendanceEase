@@ -169,6 +169,27 @@ function createAppError(type: AppError['type'], customMessage?: string): AppErro
     return error;
 }
 
+// ─── Name Lookup (used on setup screen — bypasses rate limiter) ───
+export async function fetchStudentName(rollNo: string, semester: string): Promise<string | null> {
+    try {
+        const cleanRoll = validateRollNumber(rollNo);
+        const cleanSem = validateSemester(semester);
+        const body = `examRollNo=${encodeURIComponent(cleanRoll)}&semester=${encodeURIComponent(cleanSem)}`;
+        const response = await fetchWithTimeout(`${BASE_URL}/showOverallAttendance`, {
+            method: 'POST',
+            headers: HEADERS,
+            body,
+        });
+        if (!response.ok) return null;
+        const data: ApiRow[] = await response.json();
+        if (!data || data.length === 0) return null;
+        const name = data[0].student_Name?.trim();
+        return name || null;
+    } catch {
+        return null;
+    }
+}
+
 // ─── Overall Attendance ───
 export async function fetchOverallAttendance(
     rollNo: string,

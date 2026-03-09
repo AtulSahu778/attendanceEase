@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
-    KeyboardAvoidingView, Platform, Alert, StyleSheet, Animated,
+    KeyboardAvoidingView, Platform, Alert, StyleSheet, Animated, Image,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { SEMESTER_OPTIONS, StudentProfile } from '../types';
+import { fetchStudentName } from '../services/attendanceApi';
 
 // ─── Press-scale animation ───
 function usePressScale(to = 0.96) {
@@ -41,15 +42,30 @@ export default function SetupScreen() {
         ]).start();
     }, []);
 
+    const handleRollBlur = async () => {
+        const roll = rollNumber.trim();
+        if (!roll || roll.length < 5) return;
+        const name = await fetchStudentName(roll, semester);
+        if (name) setDisplayName(name);
+    };
+
     const handleSave = async () => {
         if (!rollNumber.trim()) {
             Alert.alert('Required', 'Please enter your Roll Number / Form No.');
             return;
         }
+
+        // If name wasn't auto-fetched yet (e.g. user tapped submit without blurring), fetch it now
+        let resolvedName = displayName.trim();
+        if (!resolvedName) {
+            const fetched = await fetchStudentName(rollNumber.trim(), semester);
+            if (fetched) resolvedName = fetched;
+        }
+
         const profile: StudentProfile = {
             rollNumber: rollNumber.trim().toUpperCase(),
             semester,
-            displayName: displayName.trim() || undefined,
+            displayName: resolvedName || undefined,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -70,7 +86,11 @@ export default function SetupScreen() {
                         {/* Header */}
                         <View style={[s.header, { paddingTop: Math.max(insets.top + 20, 72) }]}>
                             <BlurView intensity={40} tint="dark" style={s.iconWrap}>
-                                <Ionicons name="school" size={38} color="white" />
+                                <Image
+                                    source={require('../assets/favicon_io/android-chrome-192x192.png')}
+                                    style={{ width: 54, height: 54, borderRadius: 12 }}
+                                    resizeMode="contain"
+                                />
                             </BlurView>
                             <Text style={s.heroTitle}>AttendEase</Text>
                             <Text style={s.heroSub}>Set up once. Check attendance{'\n'}with a single tap.</Text>
@@ -90,6 +110,7 @@ export default function SetupScreen() {
                                         placeholderTextColor="rgba(255,255,255,0.25)"
                                         value={rollNumber}
                                         onChangeText={setRollNumber}
+                                        onBlur={handleRollBlur}
                                         autoCapitalize="characters"
                                         autoCorrect={false}
                                     />
@@ -136,22 +157,8 @@ export default function SetupScreen() {
                                 )}
                             </View>
 
-                            {/* Display Name */}
-                            <View style={s.fieldGroup}>
-                                <Text style={s.fieldLabel}>DISPLAY NAME <Text style={{ color: 'rgba(255,255,255,0.25)' }}>(OPTIONAL)</Text></Text>
-                                <BlurView intensity={40} tint="dark" style={s.glassInput}>
-                                    <Ionicons name="person-outline" size={20} color="rgba(255,255,255,0.4)" />
-                                    <TextInput
-                                        style={s.textInput}
-                                        placeholder="Your name for greeting"
-                                        placeholderTextColor="rgba(255,255,255,0.25)"
-                                        value={displayName}
-                                        onChangeText={setDisplayName}
-                                        autoCorrect={false}
-                                    />
-                                </BlurView>
-                            </View>
                         </View>
+
 
                         {/* CTA */}
                         <View style={{ flex: 1, justifyContent: 'flex-end', paddingHorizontal: 24, paddingBottom: Math.max(insets.bottom + 16, 40), marginTop: 24 }}>

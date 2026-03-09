@@ -107,7 +107,7 @@ export default function HomeScreen() {
                 <Animated.View style={[s.headerRow, animHeader, { paddingTop: Math.max(insets.top + 16, 64) }]}>
                     <View>
                         <Text style={s.welcomeLabel}>Welcome back</Text>
-                        <Text style={s.heroName}>{profile?.displayName || 'Student'}</Text>
+                        <Text style={s.heroName}>{displayName}</Text>
                     </View>
                     <Animated.View style={{ transform: [{ scale: gearScale.scale }] }}>
                         <TouchableOpacity
@@ -241,9 +241,6 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9, letterSpacing: 0.5 }}>
-                        Unofficial student tool · Not affiliated with SXC Ranchi
-                    </Text>
                 </BlurView>
             </View>
 

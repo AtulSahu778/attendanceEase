@@ -5,46 +5,18 @@ import { AttendanceResult, StudentProfile } from '../types';
 const PROFILE_KEY = 'student_profile';
 const CACHE_KEY_PREFIX = 'attendance_cache_';
 
-// ─── Platform-aware secure storage ───
-// On web: uses localStorage (no Keychain available)
-// On native: uses expo-secure-store (Keychain / Keystore)
-
-async function secureSet(key: string, value: string): Promise<void> {
-    if (Platform.OS === 'web') {
-        localStorage.setItem(key, value);
-    } else {
-        const SecureStore = require('expo-secure-store');
-        await SecureStore.setItemAsync(key, value);
-    }
-}
-
-async function secureGet(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') {
-        return localStorage.getItem(key);
-    } else {
-        const SecureStore = require('expo-secure-store');
-        return await SecureStore.getItemAsync(key);
-    }
-}
-
-async function secureDelete(key: string): Promise<void> {
-    if (Platform.OS === 'web') {
-        localStorage.removeItem(key);
-    } else {
-        const SecureStore = require('expo-secure-store');
-        await SecureStore.deleteItemAsync(key);
-    }
-}
-
-// ─── Profile Storage ───
+// ─── Profile Storage (AsyncStorage) ───
+// We use AsyncStorage instead of SecureStore because SecureStore.deleteItemAsync
+// is unreliable on some Android builds and Expo Go, causing delete to be a no-op.
+// Roll number + semester aren't sensitive secrets requiring hardware encryption.
 
 export async function saveProfile(profile: StudentProfile): Promise<void> {
-    await secureSet(PROFILE_KEY, JSON.stringify(profile));
+    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
 }
 
 export async function getProfile(): Promise<StudentProfile | null> {
     try {
-        const data = await secureGet(PROFILE_KEY);
+        const data = await AsyncStorage.getItem(PROFILE_KEY);
         if (!data) return null;
         return JSON.parse(data) as StudentProfile;
     } catch {
@@ -53,7 +25,7 @@ export async function getProfile(): Promise<StudentProfile | null> {
 }
 
 export async function clearProfile(): Promise<void> {
-    await secureDelete(PROFILE_KEY);
+    await AsyncStorage.removeItem(PROFILE_KEY);
 }
 
 // ─── Attendance Cache (AsyncStorage) ───
@@ -91,11 +63,13 @@ export async function clearAllCache(): Promise<void> {
 }
 
 // ─── Full data deletion ───
+// Since profile is now stored in AsyncStorage, a single clear() removes everything.
+// On web we also clear raw localStorage to wipe any data written by the old SecureStore shim.
 export async function deleteAllUserData(): Promise<void> {
-    // Clear profile from SecureStore
-    await secureDelete(PROFILE_KEY);
-    // Clear all AsyncStorage data (cache + rate limiter state)
     await AsyncStorage.clear();
+    if (Platform.OS === 'web') {
+        try { localStorage.clear(); } catch { /* ignore */ }
+    }
 }
 
 // ─── Cache freshness check ───
