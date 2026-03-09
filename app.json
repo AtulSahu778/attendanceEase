@@ -4,7 +4,8 @@
     "slug": "atulsahu",
     "version": "1.0.0",
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/8e461186-dc55-4a40-96ab-4cdcf0199213"
     },
     "runtimeVersion": {
       "policy": "appVersion"
