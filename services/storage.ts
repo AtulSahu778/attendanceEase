@@ -2,22 +2,53 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { AttendanceResult, StudentProfile } from '../types';
 
-const PROFILE_KEY = 'student_profile';
-const CACHE_KEY_PREFIX = 'attendance_cache_';
+// ─── Namespaced Keys ───
+// All AttendEase keys use the @ae_ prefix to avoid colliding with other libraries.
+const PROFILE_KEY = '@ae_profile';
+const CACHE_KEY_PREFIX = '@ae_cache_';
+const ORIGINAL_ROLL_KEY = '@ae_original_roll';
 
-// ─── Profile Storage (AsyncStorage) ───
-// We use AsyncStorage instead of SecureStore because SecureStore.deleteItemAsync
-// is unreliable on some Android builds and Expo Go, causing delete to be a no-op.
-// Roll number + semester aren't sensitive secrets requiring hardware encryption.
+// Legacy keys (for migration cleanup on web)
+const LEGACY_KEYS = ['student_profile', 'attendance_cache_overall', 'attendance_cache_daily', 'attendance_cache_monthly'];
+
+// Complete list of all AttendEase keys (for targeted deletion)
+const ALL_AE_KEYS = [
+    PROFILE_KEY,
+    `${CACHE_KEY_PREFIX}overall`,
+    `${CACHE_KEY_PREFIX}daily`,
+    `${CACHE_KEY_PREFIX}monthly`,
+    ORIGINAL_ROLL_KEY,
+    '@ae_daily_requests',
+    '@ae_unique_rolls',
+    '@ae_last_fetch',
+];
+
+// ─── Profile Storage ───
 
 export async function saveProfile(profile: StudentProfile): Promise<void> {
     await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+
+    // Store the original roll number once (Issue 1: single roll per install)
+    const existingOriginal = await AsyncStorage.getItem(ORIGINAL_ROLL_KEY);
+    if (!existingOriginal) {
+        await AsyncStorage.setItem(ORIGINAL_ROLL_KEY, profile.rollNumber);
+    }
 }
 
 export async function getProfile(): Promise<StudentProfile | null> {
     try {
         const data = await AsyncStorage.getItem(PROFILE_KEY);
-        if (!data) return null;
+        if (!data) {
+            // Migration: try reading from legacy key
+            const legacy = await AsyncStorage.getItem('student_profile');
+            if (legacy) {
+                // Migrate to new key and clean up
+                await AsyncStorage.setItem(PROFILE_KEY, legacy);
+                await AsyncStorage.removeItem('student_profile');
+                return JSON.parse(legacy) as StudentProfile;
+            }
+            return null;
+        }
         return JSON.parse(data) as StudentProfile;
     } catch {
         return null;
@@ -28,7 +59,11 @@ export async function clearProfile(): Promise<void> {
     await AsyncStorage.removeItem(PROFILE_KEY);
 }
 
-// ─── Attendance Cache (AsyncStorage) ───
+export async function getOriginalRollNumber(): Promise<string | null> {
+    return AsyncStorage.getItem(ORIGINAL_ROLL_KEY);
+}
+
+// ─── Attendance Cache ───
 
 export async function cacheResult(result: AttendanceResult): Promise<void> {
     const key = `${CACHE_KEY_PREFIX}${result.viewMode}`;
@@ -63,12 +98,15 @@ export async function clearAllCache(): Promise<void> {
 }
 
 // ─── Full data deletion ───
-// Since profile is now stored in AsyncStorage, a single clear() removes everything.
-// On web we also clear raw localStorage to wipe any data written by the old SecureStore shim.
+// Removes only AttendEase-namespaced keys — does NOT wipe other libraries' data.
 export async function deleteAllUserData(): Promise<void> {
-    await AsyncStorage.clear();
+    await AsyncStorage.multiRemove(ALL_AE_KEYS);
+
+    // On web, also clean up legacy localStorage entries from older versions
     if (Platform.OS === 'web') {
-        try { localStorage.clear(); } catch { /* ignore */ }
+        try {
+            LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
+        } catch { /* ignore */ }
     }
 }
 
@@ -77,7 +115,7 @@ export async function deleteAllUserData(): Promise<void> {
 const CACHE_MAX_AGE: Record<string, number> = {
     overall: 5 * 60_000,   // 5 minutes
     monthly: 5 * 60_000,   // 5 minutes
-    daily: 10 * 60_000,   // 10 minutes
+    daily: 10 * 60_000,    // 10 minutes
 };
 
 export async function isCacheFresh(viewMode: string): Promise<boolean> {

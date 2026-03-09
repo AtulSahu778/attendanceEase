@@ -2,10 +2,10 @@
  * Rate Limiter & Request Deduplication for AttendEase
  *
  * Provides:
- * 1. Persistent daily rate limit: max 50 requests per day (AsyncStorage)
+ * 1. Persistent daily rate limit: max 50 requests per 24-hour rolling window (AsyncStorage)
  * 2. In-memory sliding window: max 8 requests per 60s (burst protection)
  * 3. In-flight deduplication: returns same Promise for duplicate concurrent calls
- * 4. Anti-scraping: blocks if >10 unique roll numbers are queried
+ * 4. Anti-scraping: blocks if >10 unique roll numbers are queried in a 24h window
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,8 +16,9 @@ const MAX_REQUESTS_PER_MINUTE = 8;
 const WINDOW_MS = 60_000;
 const MAX_DAILY_REQUESTS = 50;
 const MAX_UNIQUE_ROLLS = 10;
+const ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// ─── AsyncStorage Keys ───
+// ─── AsyncStorage Keys (namespaced) ───
 const DAILY_COUNT_KEY = '@ae_daily_requests';
 const UNIQUE_ROLLS_KEY = '@ae_unique_rolls';
 const LAST_FETCH_KEY = '@ae_last_fetch';
@@ -38,7 +39,7 @@ function createRateLimitError(): AppError {
 function createDailyLimitError(count: number): AppError {
     return {
         type: 'RATE_LIMIT_ERROR',
-        message: `Daily request limit reached (${count}/${MAX_DAILY_REQUESTS}). Try again tomorrow.`,
+        message: `Daily request limit reached (${count}/${MAX_DAILY_REQUESTS}). Try again in a few hours.`,
         recoveryAction: 'retry',
     };
 }
@@ -51,35 +52,33 @@ function createAbuseError(): AppError {
     };
 }
 
-// ─── Daily counter helpers ───
+// ─── 24-hour rolling daily counter ───
 interface DailyCount {
     count: number;
-    date: string;
-}
-
-function getTodayString(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    resetAt: number; // timestamp (ms) when the current window started
 }
 
 async function getDailyCount(): Promise<DailyCount> {
     try {
         const raw = await AsyncStorage.getItem(DAILY_COUNT_KEY);
-        if (!raw) return { count: 0, date: getTodayString() };
+        if (!raw) return { count: 0, resetAt: Date.now() };
         const data: DailyCount = JSON.parse(raw);
-        // Reset if it's a new day
-        if (data.date !== getTodayString()) {
-            return { count: 0, date: getTodayString() };
+        // Reset if 24 hours have elapsed since the window opened
+        if (Date.now() - data.resetAt >= ROLLING_WINDOW_MS) {
+            return { count: 0, resetAt: Date.now() };
         }
         return data;
     } catch {
-        return { count: 0, date: getTodayString() };
+        return { count: 0, resetAt: Date.now() };
     }
 }
 
 async function incrementDailyCount(): Promise<number> {
     const current = await getDailyCount();
-    const updated: DailyCount = { count: current.count + 1, date: getTodayString() };
+    const updated: DailyCount = {
+        count: current.count + 1,
+        resetAt: current.count === 0 ? Date.now() : current.resetAt,
+    };
     await AsyncStorage.setItem(DAILY_COUNT_KEY, JSON.stringify(updated));
     return updated.count;
 }
@@ -87,17 +86,17 @@ async function incrementDailyCount(): Promise<number> {
 // ─── Unique roll number tracking (anti-scraping) ───
 interface UniqueRolls {
     rolls: string[];
-    date: string;
+    resetAt: number;
 }
 
 async function trackRollNumber(rollNo: string): Promise<void> {
     try {
         const raw = await AsyncStorage.getItem(UNIQUE_ROLLS_KEY);
-        let data: UniqueRolls = raw ? JSON.parse(raw) : { rolls: [], date: getTodayString() };
+        let data: UniqueRolls = raw ? JSON.parse(raw) : { rolls: [], resetAt: Date.now() };
 
-        // Reset if new day
-        if (data.date !== getTodayString()) {
-            data = { rolls: [], date: getTodayString() };
+        // Reset if 24 hours have elapsed
+        if (Date.now() - data.resetAt >= ROLLING_WINDOW_MS) {
+            data = { rolls: [], resetAt: Date.now() };
         }
 
         if (!data.rolls.includes(rollNo)) {
@@ -155,7 +154,7 @@ function recordRequest(): void {
 /**
  * Execute an API call through the rate limiter.
  *
- * - Enforces burst rate limit (8/60s) and daily limit (50/day)
+ * - Enforces burst rate limit (8/60s) and rolling 24h limit (50/24h)
  * - Tracks unique roll numbers for anti-scraping
  * - Deduplicates identical in-flight requests
  */

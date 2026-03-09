@@ -107,7 +107,7 @@ export default function HomeScreen() {
                 <Animated.View style={[s.headerRow, animHeader, { paddingTop: Math.max(insets.top + 16, 64) }]}>
                     <View>
                         <Text style={s.welcomeLabel}>Welcome back</Text>
-                        <Text style={s.heroName}>{displayName}</Text>
+                        <Text style={s.heroName}>{displayName} 👋</Text>
                     </View>
                     <Animated.View style={{ transform: [{ scale: gearScale.scale }] }}>
                         <TouchableOpacity

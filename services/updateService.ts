@@ -16,7 +16,9 @@ export interface UpdateStatus {
 
 /**
  * Silently check for updates on app launch.
- * Downloads and prompts user to reload if an update is found.
+ * Downloads the update but does NOT prompt an immediate reload.
+ * The update will be applied automatically on the next cold start,
+ * avoiding the risk of reloading into a broken version mid-session.
  */
 export async function checkForUpdates(): Promise<UpdateStatus> {
     if (__DEV__) {
@@ -28,22 +30,14 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
 
         if (update.isAvailable) {
             await Updates.fetchUpdateAsync();
-
-            Alert.alert(
-                'Update Available',
-                'A new version has been downloaded. Restart to apply?',
-                [
-                    { text: 'Later', style: 'cancel' },
-                    { text: 'Restart', onPress: () => Updates.reloadAsync() },
-                ]
-            );
-
+            // Update downloaded — it will apply on next app launch.
+            // No reload prompt shown to avoid breaking the active session.
             return { available: true, downloaded: true };
         }
 
         return { available: false, downloaded: false };
     } catch (error: any) {
-        console.log('Update check failed:', error?.message);
+        // Silently fail — don't disrupt the user
         return { available: false, downloaded: false, error: error?.message };
     }
 }

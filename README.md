@@ -218,9 +218,9 @@ Endpoints:
 **Three-Layer Protection:**
 
 1. **Burst Limit**: 8 requests per 60-second sliding window.
-2. **Daily Limit**: Max 50 requests per day (persisted in AsyncStorage, resets at midnight).
+2. **Daily Limit**: Max 50 requests per rolling 24-hour window (resets 24h after the first request).
 3. **In-Flight Deduplication**: Returns the same Promise for concurrent identical requests.
-4. **Anti-Scraping**: Blocks access if more than 10 unique roll numbers are queried in a day.
+4. **Anti-Scraping**: Blocks access if more than 10 unique roll numbers are queried in a 24-hour window.
 5. **UI Cooldown**: After 5 rapid manual taps (within 15s), a 30-second visible cooldown is applied on the home screen CTA.
 
 **Transparency Stats (visible in Settings):**
@@ -246,8 +246,8 @@ Endpoints:
 
 ### 8. OTA Update System
 
-- **Auto-check on launch**: `checkForUpdates()` runs silently in `_layout.tsx` on every app start. If an update is available, it is downloaded and the user is prompted to reload.
-- **Manual check**: Settings → Check for Updates triggers `checkForUpdatesManual()` with user-facing alerts.
+- **Auto-check on launch**: `checkForUpdates()` runs silently in `_layout.tsx` on every app start. If an update is available, it is downloaded and queued to apply on the *next cold start* (deferred reload) to avoid interrupting the active session.
+- **Manual check**: Settings → Check for Updates triggers `checkForUpdatesManual()` which prompts the user to "Restart Now" if they wish to apply the update immediately.
 - **Dev guards**: Both functions are no-ops in development / Expo Go (`__DEV__` guard). Real OTA requires a production/EAS build.
 
 ```bash
@@ -289,11 +289,11 @@ interface AppState {
 
 ### 10. Security Considerations
 
-1. **Profile Storage**: Roll number and semester stored in AsyncStorage (not SecureStore, which had unreliable deletion on some devices).
+1. **Profile Storage**: Profile data is stored in AsyncStorage using an isolated namespace. The original roll number is locked to the installation to prevent unauthorized querying of other students' data. 
 2. **API Communication**: Direct HTTPS to college portal (native). Local proxy for web (CORS bypass). No third-party servers.
 3. **Input Validation**: All user inputs sanitized and validated before use.
-4. **Rate Limiting + Anti-Scraping**: Protects the college portal from automated abuse.
-5. **Data Deletion**: Single `AsyncStorage.clear()` call atomically removes all app data.
+4. **Rolling Rate Limits & Anti-Scraping**: Strict 24-hour sliding windows protect the college portal from automated abuse.
+5. **Data Deletion**: Single `AsyncStorage.multiRemove()` call atomically removes all `@ae_` namespaced app data, ensuring targeted cleanup without affecting other library storage.
 
 ---
 

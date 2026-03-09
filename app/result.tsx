@@ -220,13 +220,6 @@ export default function ResultScreen() {
                     {/* Subjects list */}
                     {attendanceResult.subjects.map((sub, i) => <SubjectCard key={sub.subjectCode + i} s={sub} />)}
 
-                    {/* Open in Browser */}
-                    <TouchableOpacity onPress={openPortal} activeOpacity={0.8} style={{ marginTop: 8 }}>
-                        <View style={[st.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 40, paddingVertical: 16 }]}>
-                            <Ionicons name="open-outline" size={16} color="#9CA3AF" />
-                            <Text style={{ color: '#9CA3AF', fontWeight: '500', fontSize: 14 }}>Open in Browser</Text>
-                        </View>
-                    </TouchableOpacity>
                     <View style={{ height: 80 }} />
                 </ScrollView>
             )}
