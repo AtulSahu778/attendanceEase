@@ -380,8 +380,23 @@ export default function SettingsScreen() {
                     </View>
 
                     {/* Footer */}
-                    <View style={{ alignItems: 'center', marginTop: 40 }}>
-                        <Text style={s.footerText}>Built by Atul · AttendEase</Text>
+                    <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 40 }}>
+                        <View style={{ backgroundColor: '#121212', borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 }}>
+                                <Text style={{ color: '#9CA3AF', fontSize: 13, fontWeight: '500', marginRight: 12 }}>Built by Atul</Text>
+                                <View style={{ flexDirection: 'row', gap: 12 }}>
+                                    <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
+                                        <Ionicons name="logo-github" size={16} color="rgba(255,255,255,0.5)" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/atulsahu/')} activeOpacity={0.6}>
+                                        <Ionicons name="logo-linkedin" size={16} color="rgba(255,255,255,0.5)" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
+                                        <Ionicons name="logo-instagram" size={16} color="rgba(255,255,255,0.5)" />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
                     </View>
 
                 </Animated.View>
