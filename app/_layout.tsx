@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAppStore } from '../store/useAppStore';
+import { checkForUpdates } from '../services/updateService';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -17,6 +18,8 @@ export default function RootLayout() {
         loadProfile().then(() => {
             SplashScreen.hideAsync();
         });
+        // Check for OTA updates on launch
+        checkForUpdates();
     }, []);
 
     useEffect(() => {
@@ -43,6 +46,7 @@ export default function RootLayout() {
                     <Stack.Screen name="home" />
                     <Stack.Screen name="result" />
                     <Stack.Screen name="settings" />
+                    <Stack.Screen name="privacy" />
                 </Stack>
 
             </View>

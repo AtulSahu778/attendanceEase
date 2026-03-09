@@ -33,6 +33,11 @@ function timeAgo(iso: string) {
     const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`; return `${Math.floor(h / 24)}d ago`;
 }
 
+function maskRollNumber(roll: string): string {
+    if (roll.length <= 4) return roll;
+    return '******' + roll.slice(-4);
+}
+
 function usePressScale(to = 0.98) {
     const scale = useRef(new Animated.Value(1)).current;
     const onPressIn = () => Animated.timing(scale, { toValue: to, duration: 100, useNativeDriver: true }).start();
@@ -51,9 +56,10 @@ function useFade(delay = 0) {
 export default function HomeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { profile, viewMode, setViewMode, fetchAttendance, isLoading, attendanceResult } = useAppStore();
+    const { profile, viewMode, setViewMode, fetchAttendance, isLoading, attendanceResult, isCachedData, cooldownEnd } = useAppStore();
     const [lastSynced, setLastSynced] = useState<string | null>(null);
     const [showDonation, setShowDonation] = useState(false);
+    const [cooldownRemaining, setCooldownRemaining] = useState(0);
     const ctaScale = usePressScale(0.98);
     const gearScale = usePressScale(0.95);
 
@@ -65,13 +71,31 @@ export default function HomeScreen() {
 
     useEffect(() => { getLastCacheTimestamp().then(setLastSynced); }, [attendanceResult]);
 
+    // ─── Cooldown timer ───
+    useEffect(() => {
+        if (cooldownEnd <= Date.now()) {
+            setCooldownRemaining(0);
+            return;
+        }
+        const update = () => {
+            const remaining = Math.max(0, Math.ceil((cooldownEnd - Date.now()) / 1000));
+            setCooldownRemaining(remaining);
+            if (remaining <= 0) clearInterval(interval);
+        };
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [cooldownEnd]);
+
     const handleCheck = () => {
         fetchAttendance(true);
         router.push('/result');
     };
 
     const displayName = profile?.displayName || profile?.rollNumber || 'Student';
+    const maskedRoll = profile?.rollNumber ? maskRollNumber(profile.rollNumber) : '';
     const pct = attendanceResult?.overallPercentage ?? 0;
+    const isCoolingDown = cooldownRemaining > 0;
 
     return (
         <View style={s.screen}>
@@ -107,7 +131,7 @@ export default function HomeScreen() {
                             </View>
                             <View style={{ marginLeft: 16, flex: 1 }}>
                                 <Text style={s.cardHeading}>{displayName}</Text>
-                                <Text style={s.textSecondary}>{profile?.rollNumber} • Sem {profile?.semester}</Text>
+                                <Text style={s.textSecondary}>{maskedRoll} • Sem {profile?.semester}</Text>
                             </View>
                         </View>
                         <View style={s.dateRow}>
@@ -116,6 +140,18 @@ export default function HomeScreen() {
                         </View>
                     </View>
                 </Animated.View>
+
+                {/* Cached Data Banner */}
+                {isCachedData && attendanceResult && (
+                    <Animated.View style={[{ marginHorizontal: 16, marginTop: 12 }, animResult]}>
+                        <View style={s.cacheBanner}>
+                            <Ionicons name="cloud-offline-outline" size={14} color="#F59E0B" />
+                            <Text style={s.cacheBannerText}>
+                                Showing cached data{attendanceResult.fetchedAt ? ` (${timeAgo(attendanceResult.fetchedAt)})` : ''}
+                            </Text>
+                        </View>
+                    </Animated.View>
+                )}
 
                 {/* View Mode Tabs */}
                 <Animated.View style={[{ marginHorizontal: 16, marginTop: 24 }, animTabs]}>
@@ -157,15 +193,21 @@ export default function HomeScreen() {
                 <Animated.View style={[{ paddingHorizontal: 16, marginTop: 24 }, animCta]}>
                     <Animated.View style={{ transform: [{ scale: ctaScale.scale }] }}>
                         <TouchableOpacity
-                            style={[s.ctaButton, isLoading && { opacity: 0.7 }]}
+                            style={[s.ctaButton, (isLoading || isCoolingDown) && { opacity: 0.7 }]}
                             onPress={handleCheck}
                             onPressIn={ctaScale.onPressIn}
                             onPressOut={ctaScale.onPressOut}
-                            disabled={isLoading}
+                            disabled={isLoading || isCoolingDown}
                             activeOpacity={0.9}
                         >
                             {isLoading ? null : <Ionicons name="server-outline" size={18} color="#000000" style={{ marginRight: 8 }} />}
-                            <Text style={s.ctaText}>{isLoading ? 'Loading...' : 'Check Attendance'}</Text>
+                            <Text style={s.ctaText}>
+                                {isLoading
+                                    ? 'Loading...'
+                                    : isCoolingDown
+                                        ? `Wait ${cooldownRemaining}s`
+                                        : 'Check Attendance'}
+                            </Text>
                         </TouchableOpacity>
                     </Animated.View>
 
@@ -182,21 +224,26 @@ export default function HomeScreen() {
 
             {/* Footer — floating pill at bottom */}
             <View pointerEvents="box-none" style={{ position: 'absolute', bottom: Math.max(insets.bottom + 16, 16), left: 0, right: 0, alignItems: 'center' }}>
-                <BlurView intensity={20} tint="dark" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
-                    <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 0.3, fontWeight: '500', marginRight: 16 }}>
-                        Built by Atul
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                        <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
-                            <Ionicons name="logo-github" size={16} color="rgba(255,255,255,0.5)" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/atulsahu/')} activeOpacity={0.6}>
-                            <Ionicons name="logo-linkedin" size={16} color="rgba(255,255,255,0.5)" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
-                            <Ionicons name="logo-instagram" size={16} color="rgba(255,255,255,0.5)" />
-                        </TouchableOpacity>
+                <BlurView intensity={20} tint="dark" style={{ alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 0.3, fontWeight: '500', marginRight: 16 }}>
+                            Built by Atul
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.6}>
+                                <Ionicons name="logo-github" size={16} color="rgba(255,255,255,0.5)" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/atulsahu/')} activeOpacity={0.6}>
+                                <Ionicons name="logo-linkedin" size={16} color="rgba(255,255,255,0.5)" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.6}>
+                                <Ionicons name="logo-instagram" size={16} color="rgba(255,255,255,0.5)" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
+                    <Text style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9, letterSpacing: 0.5 }}>
+                        Unofficial student tool · Not affiliated with SXC Ranchi
+                    </Text>
                 </BlurView>
             </View>
 
@@ -218,6 +265,9 @@ const s = StyleSheet.create({
     cardHeading: { fontSize: 18, fontWeight: '600', color: '#FFFFFF', letterSpacing: -0.3 },
     textSecondary: { fontSize: 14, color: '#9CA3AF', marginTop: 2 },
     dateRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1A1A1A', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, marginTop: 4 },
+
+    cacheBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: 'rgba(245,158,11,0.15)' },
+    cacheBannerText: { fontSize: 12, color: '#F59E0B', fontWeight: '500', letterSpacing: -0.2 },
 
     sectionLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 1, color: '#9CA3AF' },
     tabContainer: { flexDirection: 'row', backgroundColor: '#121212', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },

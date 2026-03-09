@@ -10,7 +10,9 @@ import {
     getProfile as getProfileFromStore,
     isCacheFresh,
     saveProfile as saveProfileToStore,
+    deleteAllUserData,
 } from '../services/storage';
+import { resetRateLimiter } from '../services/rateLimiter';
 import {
     AppError,
     AttendanceResult,
@@ -19,6 +21,9 @@ import {
     SubjectRow,
     ViewMode,
 } from '../types';
+
+// ─── Cooldown duration (30 seconds) ───
+const COOLDOWN_MS = 30_000;
 
 interface AppState {
     // Profile
@@ -34,7 +39,9 @@ interface AppState {
     isLoading: boolean;
     error: AppError | null;
     isCachedData: boolean;
-    lastFetchAttempt: number; // timestamp of last fetch attempt (for UI cooldown)
+    lastFetchAttempt: number; // timestamp of last fetch attempt
+    fetchAttempts: number; // count of consecutive quick fetches
+    cooldownEnd: number; // timestamp when cooldown expires (for visible countdown)
 
     // Actions
     loadProfile: () => Promise<void>;
@@ -43,6 +50,7 @@ interface AppState {
     setSelectedDate: (date: string) => void;
     fetchAttendance: (forceRefresh?: boolean) => Promise<void>;
     clearError: () => void;
+    deleteAllData: () => Promise<void>;
 }
 
 function getTodayString(): string {
@@ -64,6 +72,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     error: null,
     isCachedData: false,
     lastFetchAttempt: 0,
+    fetchAttempts: 0,
+    cooldownEnd: 0,
 
     // ─── Load profile from secure storage ───
     loadProfile: async () => {
@@ -86,13 +96,19 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ selectedDate: date });
     },
 
-    // ─── Fetch attendance (with cache-first & concurrency guard) ───
+    // ─── Fetch attendance (with cache-first, cooldown, & concurrency guard) ───
     fetchAttendance: async (forceRefresh = false) => {
-        const { profile, viewMode, selectedDate, isLoading } = get();
+        const { profile, viewMode, selectedDate, isLoading, cooldownEnd, lastFetchAttempt, fetchAttempts } = get();
         if (!profile) return;
 
         // Prevent concurrent fetches
         if (isLoading) return;
+
+        // Enforce visible cooldown
+        const now = Date.now();
+        if (forceRefresh && now < cooldownEnd) {
+            return;
+        }
 
         // Cache-first: if not forcing refresh, check if cache is still fresh
         if (!forceRefresh) {
@@ -110,7 +126,32 @@ export const useAppStore = create<AppState>((set, get) => ({
             }
         }
 
-        set({ isLoading: true, error: null, isCachedData: false, lastFetchAttempt: Date.now() });
+        // Determine if we should trigger a cooldown on this manual fetch
+        // If the user fetches manually twice within 15 seconds, trigger a 30s cooldown
+        let newFetchAttempts = fetchAttempts;
+        let newCooldownEnd = cooldownEnd;
+
+        if (forceRefresh) {
+            if (now - lastFetchAttempt < 15000) {
+                newFetchAttempts += 1;
+            } else {
+                newFetchAttempts = 1;
+            }
+
+            if (newFetchAttempts >= 2) {
+                newCooldownEnd = now + COOLDOWN_MS;
+                newFetchAttempts = 0; // reset after triggering cooldown
+            }
+        }
+
+        set({
+            isLoading: true,
+            error: null,
+            isCachedData: false,
+            lastFetchAttempt: now,
+            fetchAttempts: newFetchAttempts,
+            cooldownEnd: newCooldownEnd,
+        });
 
         try {
             let result: { student: StudentInfo; subjects: SubjectRow[] };
@@ -152,8 +193,8 @@ export const useAppStore = create<AppState>((set, get) => ({
                 isCachedData: false,
             });
         } catch (err: any) {
-            // Handle rate limit errors gracefully — don't overwrite existing results
-            if (err?.type === 'RATE_LIMIT_ERROR') {
+            // Handle rate limit / abuse errors gracefully — don't overwrite existing results
+            if (err?.type === 'RATE_LIMIT_ERROR' || err?.type === 'ABUSE_ERROR') {
                 const { attendanceResult } = get();
                 set({
                     isLoading: false,
@@ -184,5 +225,24 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     clearError: () => {
         set({ error: null });
+    },
+
+    // ─── Delete all user data ───
+    deleteAllData: async () => {
+        await deleteAllUserData();
+        await resetRateLimiter();
+        set({
+            profile: null,
+            isOnboarded: false,
+            attendanceResult: null,
+            viewMode: 'overall',
+            selectedDate: getTodayString(),
+            isLoading: false,
+            error: null,
+            isCachedData: false,
+            lastFetchAttempt: 0,
+            fetchAttempts: 0,
+            cooldownEnd: 0,
+        });
     },
 }));

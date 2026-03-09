@@ -61,6 +61,7 @@ export type AppErrorType =
     | 'EMPTY_RESULT'
     | 'PARSE_ERROR'
     | 'RATE_LIMIT_ERROR'
+    | 'ABUSE_ERROR'
     | 'UNKNOWN_ERROR';
 
 export interface AppError {

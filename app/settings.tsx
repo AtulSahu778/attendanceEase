@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Linking, StyleSheet, Animated } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,9 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { SEMESTER_OPTIONS, StudentProfile } from '../types';
-import { clearAllCache } from '../services/storage';
+import { clearAllCache, getLastCacheTimestamp } from '../services/storage';
+import { getDailyRequestCount, getLastFetchTime } from '../services/rateLimiter';
+import { checkForUpdatesManual } from '../services/updateService';
 
 function usePressScale(to = 0.97) {
     const scale = useRef(new Animated.Value(1)).current;
@@ -16,21 +18,74 @@ function usePressScale(to = 0.97) {
     return { scale, onPressIn, onPressOut };
 }
 
+function timeAgo(iso: string) {
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return 'Just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+}
+
 export default function SettingsScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { profile, setProfile } = useAppStore();
+    const { profile, setProfile, deleteAllData } = useAppStore();
     const [rollNumber, setRollNumber] = useState(profile?.rollNumber || '');
     const [semester, setSemester] = useState(profile?.semester || 'I');
     const [displayName, setDisplayName] = useState(profile?.displayName || '');
     const [showSemPicker, setShowSemPicker] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [rollLocked, setRollLocked] = useState(true);  // Locked by default after setup
+
+    // Transparency stats
+    const [dailyCount, setDailyCount] = useState(0);
+    const [dailyMax, setDailyMax] = useState(50);
+    const [lastFetch, setLastFetch] = useState<string | null>(null);
+    const [cacheAge, setCacheAge] = useState<string | null>(null);
 
     const backScale = usePressScale();
     const saveScale = usePressScale();
 
+    // Load transparency stats on mount
+    const loadStats = useCallback(async () => {
+        const daily = await getDailyRequestCount();
+        setDailyCount(daily.count);
+        setDailyMax(daily.max);
+        const fetchTime = await getLastFetchTime();
+        setLastFetch(fetchTime);
+        const cacheTimestamp = await getLastCacheTimestamp();
+        setCacheAge(cacheTimestamp);
+    }, []);
+
+    useEffect(() => { loadStats(); }, [loadStats]);
+
     const handleSave = async () => {
         if (!rollNumber.trim()) { Alert.alert('Required', 'Roll number cannot be empty.'); return; }
+
+        // If roll number changed and was previously set, warn user
+        if (profile?.rollNumber && rollNumber.trim().toUpperCase() !== profile.rollNumber) {
+            Alert.alert(
+                'Roll Number Changed',
+                'Changing your roll number will clear cached attendance data. Continue?',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Continue',
+                        onPress: async () => {
+                            await clearAllCache();
+                            await doSave();
+                        },
+                    },
+                ]
+            );
+            return;
+        }
+
+        await doSave();
+    };
+
+    const doSave = async () => {
         const updated: StudentProfile = {
             rollNumber: rollNumber.trim().toUpperCase(), semester,
             displayName: displayName.trim() || undefined,
@@ -38,15 +93,44 @@ export default function SettingsScreen() {
             updatedAt: new Date().toISOString(),
         };
         await setProfile(updated);
+        setRollLocked(true);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
+    };
+
+    const handleUnlockRoll = () => {
+        Alert.alert(
+            'Unlock Roll Number',
+            'Your roll number is locked for security. Are you sure you want to edit it?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Unlock', style: 'destructive', onPress: () => setRollLocked(false) },
+            ]
+        );
+    };
+
+    const handleDeleteData = () => {
+        Alert.alert(
+            'Delete All Data',
+            'This will permanently delete your profile, cached attendance, and all app data. This cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete Everything',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await deleteAllData();
+                        router.replace('/setup');
+                    },
+                },
+            ]
+        );
     };
 
     const semLabel = SEMESTER_OPTIONS.find((s) => s.value === semester)?.label || '';
 
     return (
         <View style={s.screen}>
-
 
             {/* Header */}
             <View style={[s.header, { paddingTop: Math.max(insets.top + 10, 58) }]}>
@@ -65,15 +149,25 @@ export default function SettingsScreen() {
                 <View style={s.section}>
                     <Text style={s.sectionLabel}>PROFILE</Text>
 
-                    {/* Roll Number */}
-                    <BlurView intensity={40} tint="dark" style={[s.glassInput, { marginBottom: 12 }]}>
-                        <Ionicons name="id-card-outline" size={20} color="rgba(255,255,255,0.4)" />
-                        <TextInput
-                            style={s.textInput} value={rollNumber} onChangeText={setRollNumber}
-                            autoCapitalize="characters" autoCorrect={false}
-                            placeholder="Roll Number" placeholderTextColor="rgba(255,255,255,0.25)"
-                        />
-                    </BlurView>
+                    {/* Roll Number — locked by default */}
+                    <TouchableOpacity onPress={rollLocked ? handleUnlockRoll : undefined} activeOpacity={rollLocked ? 0.8 : 1}>
+                        <BlurView intensity={40} tint="dark" style={[s.glassInput, { marginBottom: 12 }]}>
+                            <Ionicons name={rollLocked ? 'lock-closed' : 'id-card-outline'} size={20} color={rollLocked ? 'rgba(255,59,48,0.6)' : 'rgba(255,255,255,0.4)'} />
+                            <TextInput
+                                style={[s.textInput, rollLocked && { color: 'rgba(255,255,255,0.4)' }]}
+                                value={rollNumber}
+                                onChangeText={setRollNumber}
+                                autoCapitalize="characters"
+                                autoCorrect={false}
+                                editable={!rollLocked}
+                                placeholder="Roll Number"
+                                placeholderTextColor="rgba(255,255,255,0.25)"
+                            />
+                            {rollLocked && (
+                                <Text style={{ fontSize: 10, color: 'rgba(255,59,48,0.5)', fontWeight: '600' }}>LOCKED</Text>
+                            )}
+                        </BlurView>
+                    </TouchableOpacity>
 
                     {/* Semester */}
                     <TouchableOpacity onPress={() => setShowSemPicker(!showSemPicker)} activeOpacity={1}>
@@ -124,23 +218,92 @@ export default function SettingsScreen() {
                     </Animated.View>
                 </View>
 
+                {/* Request Transparency */}
+                <View style={s.section}>
+                    <Text style={s.sectionLabel}>USAGE</Text>
+                    <BlurView intensity={30} tint="dark" style={s.glassCard}>
+                        <View style={{ gap: 8 }}>
+                            <View style={s.statRow}>
+                                <Text style={s.statLabel}>API Requests Today</Text>
+                                <Text style={[s.statValue, dailyCount >= dailyMax && { color: 'rgba(255,59,48,0.85)' }]}>
+                                    {dailyCount} / {dailyMax}
+                                </Text>
+                            </View>
+                            <View style={[s.statRow, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingTop: 8 }]}>
+                                <Text style={s.statLabel}>Last Fetch</Text>
+                                <Text style={s.statValue}>{lastFetch ? timeAgo(lastFetch) : 'Never'}</Text>
+                            </View>
+                            <View style={[s.statRow, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)', paddingTop: 8 }]}>
+                                <Text style={s.statLabel}>Cache Age</Text>
+                                <Text style={s.statValue}>{cacheAge ? timeAgo(cacheAge) : 'No cache'}</Text>
+                            </View>
+                        </View>
+                    </BlurView>
+                </View>
+
+                {/* App Section */}
+                <View style={s.section}>
+                    <Text style={s.sectionLabel}>APP</Text>
+
+                    {/* Check for Updates */}
+                    <TouchableOpacity onPress={checkForUpdatesManual} activeOpacity={0.8}>
+                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center', marginBottom: 10 }]}>
+                            <View style={[s.rowIcon, { backgroundColor: 'rgba(52,199,89,0.15)' }]}>
+                                <Ionicons name="cloud-download-outline" size={19} color="rgba(52,199,89,0.85)" />
+                            </View>
+                            <View style={{ marginLeft: 14, flex: 1 }}>
+                                <Text style={s.rowTitle}>Check for Updates</Text>
+                                <Text style={s.caption}>Download latest version OTA</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
+                        </BlurView>
+                    </TouchableOpacity>
+
+                    {/* Privacy Notice */}
+                    <TouchableOpacity onPress={() => router.push('/privacy')} activeOpacity={0.8}>
+                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center' }]}>
+                            <View style={[s.rowIcon, { backgroundColor: 'rgba(52,199,89,0.15)' }]}>
+                                <Ionicons name="shield-checkmark-outline" size={19} color="rgba(52,199,89,0.85)" />
+                            </View>
+                            <View style={{ marginLeft: 14, flex: 1 }}>
+                                <Text style={s.rowTitle}>Privacy Notice</Text>
+                                <Text style={s.caption}>How your data is handled</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
+                        </BlurView>
+                    </TouchableOpacity>
+                </View>
+
                 {/* Data Section */}
                 <View style={s.section}>
                     <Text style={s.sectionLabel}>DATA</Text>
                     <TouchableOpacity
                         onPress={() => Alert.alert('Clear Cache', 'Remove cached attendance data?', [
                             { text: 'Cancel' },
-                            { text: 'Clear', style: 'destructive', onPress: () => clearAllCache() },
+                            { text: 'Clear', style: 'destructive', onPress: () => { clearAllCache(); loadStats(); } },
                         ])}
                         activeOpacity={0.8}
                     >
-                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center' }]}>
-                            <View style={[s.rowIcon, { backgroundColor: 'rgba(255,59,48,0.15)' }]}>
-                                <Ionicons name="trash-outline" size={19} color="rgba(255,59,48,0.85)" />
+                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center', marginBottom: 10 }]}>
+                            <View style={[s.rowIcon, { backgroundColor: 'rgba(255,149,0,0.15)' }]}>
+                                <Ionicons name="trash-outline" size={19} color="rgba(255,149,0,0.85)" />
                             </View>
                             <View style={{ marginLeft: 14, flex: 1 }}>
                                 <Text style={s.rowTitle}>Clear Cached Data</Text>
                                 <Text style={s.caption}>Remove locally stored results</Text>
+                            </View>
+                        </BlurView>
+                    </TouchableOpacity>
+
+                    {/* Delete All Data */}
+                    <TouchableOpacity onPress={handleDeleteData} activeOpacity={0.8}>
+                        <BlurView intensity={40} tint="dark" style={[s.glassCard, { flexDirection: 'row', alignItems: 'center' }]}>
+                            <View style={[s.rowIcon, { backgroundColor: 'rgba(255,59,48,0.15)' }]}>
+                                <Ionicons name="warning-outline" size={19} color="rgba(255,59,48,0.85)" />
+                            </View>
+                            <View style={{ marginLeft: 14, flex: 1 }}>
+                                <Text style={s.rowTitle}>Delete My Data</Text>
+                                <Text style={s.caption}>Remove all data and reset app</Text>
                             </View>
                         </BlurView>
                     </TouchableOpacity>
@@ -207,27 +370,6 @@ export default function SettingsScreen() {
                         </BlurView>
                     </TouchableOpacity>
 
-                    {/* Privacy Card */}
-                    <BlurView intensity={30} tint="dark" style={[s.glassCard, { marginBottom: 10 }]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-                            <Ionicons name="shield-checkmark" size={16} color="rgb(52,199,89)" />
-                            <Text style={{ color: 'rgb(52,199,89)', fontSize: 13, fontWeight: '600', letterSpacing: -0.2 }}>Privacy</Text>
-                        </View>
-                        <Text style={[s.caption, { lineHeight: 17 }]}>
-                            Your roll number is stored encrypted on your device. No data is sent to third-party servers. The app only communicates with the SXC Ranchi portal.
-                        </Text>
-                    </BlurView>
-
-                    {/* Disclaimer Card */}
-                    <BlurView intensity={30} tint="dark" style={s.glassCard}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-                            <Ionicons name="information-circle" size={16} color="rgba(255,255,255,0.7)" />
-                            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '600', letterSpacing: -0.2 }}>Disclaimer</Text>
-                        </View>
-                        <Text style={[s.caption, { lineHeight: 17 }]}>
-                            AttendEase is an unofficial, independent tool created strictly for educational purposes to help students track their own attendance. This application is not affiliated with, endorsed by, or connected to St. Xavier's College, Ranchi. No intellectual property of the college is used or harmed.
-                        </Text>
-                    </BlurView>
                 </View>
 
 
@@ -282,4 +424,7 @@ const s = StyleSheet.create({
     rowIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     rowTitle: { fontSize: 16, color: '#fff', fontWeight: '600', letterSpacing: -0.4 },
     caption: { fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.1, marginTop: 2 },
+    statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    statLabel: { fontSize: 13, color: 'rgba(255,255,255,0.5)', letterSpacing: -0.1 },
+    statValue: { fontSize: 13, color: '#fff', fontWeight: '600', letterSpacing: -0.2 },
 });

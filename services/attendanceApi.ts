@@ -151,6 +151,11 @@ function createAppError(type: AppError['type'], customMessage?: string): AppErro
             message: 'Too many requests. Please wait a moment.',
             recoveryAction: 'retry',
         },
+        ABUSE_ERROR: {
+            type: 'ABUSE_ERROR',
+            message: 'Suspicious activity detected. API access temporarily disabled.',
+            recoveryAction: 'retry',
+        },
         UNKNOWN_ERROR: {
             type: 'UNKNOWN_ERROR',
             message: 'An unexpected error occurred. Please try again.',
@@ -201,7 +206,7 @@ export async function fetchOverallAttendance(
         }));
 
         return { student, subjects };
-    });
+    }, cleanRoll);
 }
 
 // ─── Daily Attendance ───
@@ -264,7 +269,7 @@ export async function fetchDailyAttendance(
         }));
 
         return { student, subjects };
-    });
+    }, cleanRoll);
 }
 
 // ─── Monthly Attendance ───
@@ -319,5 +324,6 @@ export async function fetchMonthlyAttendance(
         }));
 
         return { student, subjects };
-    });
+    }, cleanRoll);
 }
+

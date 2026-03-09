@@ -90,6 +90,14 @@ export async function clearAllCache(): Promise<void> {
     await AsyncStorage.multiRemove(keys);
 }
 
+// ─── Full data deletion ───
+export async function deleteAllUserData(): Promise<void> {
+    // Clear profile from SecureStore
+    await secureDelete(PROFILE_KEY);
+    // Clear all AsyncStorage data (cache + rate limiter state)
+    await AsyncStorage.clear();
+}
+
 // ─── Cache freshness check ───
 
 const CACHE_MAX_AGE: Record<string, number> = {
