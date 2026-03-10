@@ -76,7 +76,7 @@ export async function checkForUpdatesManual(): Promise<void> {
     } catch (error: any) {
         Alert.alert(
             'Update Check Failed',
-            'Could not check for updates. Please try again later.'
+            `Could not check for updates. Reason: ${error?.message || 'Unknown error'}`
         );
     }
 }
