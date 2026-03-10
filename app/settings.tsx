@@ -379,6 +379,19 @@ export default function SettingsScreen() {
                         </View>
                     </View>
 
+                    {/* ── Disclaimer ── */}
+                    <View style={s.section}>
+                        <Text style={s.sectionLabel}>DISCLAIMER</Text>
+                        <View style={[s.card, { padding: 16, backgroundColor: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.1)' }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                                <Ionicons name="information-circle-outline" size={20} color="#9CA3AF" style={{ marginTop: 2 }} />
+                                <Text style={[s.disclaimerText, { flex: 1 }]}>
+                                    AttendEase is an unofficial, independent tool created strictly for educational purposes to help students track their own attendance. This application is not affiliated with, endorsed by, or connected to St. Xavier's College, Ranchi. No intellectual property of the college is used or harmed.
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
                     {/* Footer */}
                     <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 40 }}>
                         <View style={{ backgroundColor: '#121212', borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
@@ -444,4 +457,5 @@ const s = StyleSheet.create({
     statValue: { fontSize: 14, color: '#FFFFFF', fontWeight: '600' },
 
     footerText: { fontSize: 12, color: '#374151', letterSpacing: 0.3 },
+    disclaimerText: { fontSize: 12, color: '#6B7280', lineHeight: 18, textAlign: 'justify' },
 });
