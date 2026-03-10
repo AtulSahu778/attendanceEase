@@ -35,7 +35,7 @@ function timeAgo(iso: string) {
 
 function maskRollNumber(roll: string): string {
     if (roll.length <= 4) return roll;
-    return '******' + roll.slice(-4);
+    return roll.slice(0, -4) + '****';
 }
 
 function usePressScale(to = 0.98) {
