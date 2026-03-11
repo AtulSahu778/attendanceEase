@@ -31,6 +31,12 @@ function usePressScale(to = 0.98) {
     return { scale, onPressIn, onPressOut };
 }
 
+function classesNeededFor75(totalClasses: number, totalPresent: number): number {
+    if (totalClasses === 0) return 0;
+    const required = Math.ceil((0.75 * totalClasses - totalPresent) / 0.25);
+    return Math.max(0, required);
+}
+
 function AnimatedProgressBar({ percentage }: { percentage: number }) {
     const color = pctColor(percentage);
     return (
@@ -61,6 +67,19 @@ function SubjectCard({ s }: { s: SubjectRow }) {
                     </Text>
                     <Text style={[st.pctValue, { color }]}>{s.percentage.toFixed(1)}%</Text>
                 </View>
+
+                {(() => {
+                    const needed = classesNeededFor75(s.totalClasses, s.totalPresent);
+                    return needed > 0 ? (
+                        <Text style={{ fontSize: 12, color: '#F59E0B', marginTop: 8 }}>
+                            Need {needed} more {needed === 1 ? 'class' : 'classes'} to reach 75%
+                        </Text>
+                    ) : (
+                        <Text style={{ fontSize: 12, color: '#22C55E', marginTop: 8 }}>
+                            Above 75% attendance ✓
+                        </Text>
+                    );
+                })()}
             </View>
         </Animated.View>
     );
