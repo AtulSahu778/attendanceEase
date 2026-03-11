@@ -46,7 +46,7 @@ function AnimatedProgressBar({ percentage }: { percentage: number }) {
     );
 }
 
-function SubjectCard({ s }: { s: SubjectRow }) {
+function SubjectCard({ s, showIndicator }: { s: SubjectRow; showIndicator?: boolean }) {
     const cardScale = usePressScale(0.99);
     const color = pctColor(s.percentage);
     return (
@@ -68,7 +68,7 @@ function SubjectCard({ s }: { s: SubjectRow }) {
                     <Text style={[st.pctValue, { color }]}>{s.percentage.toFixed(1)}%</Text>
                 </View>
 
-                {(() => {
+                {showIndicator && (() => {
                     const needed = classesNeededFor75(s.totalClasses, s.totalPresent);
                     return needed > 0 ? (
                         <Text style={{ fontSize: 12, color: '#F59E0B', marginTop: 8 }}>
@@ -237,7 +237,7 @@ export default function ResultScreen() {
                     </View>
 
                     {/* Subjects list */}
-                    {attendanceResult.subjects.map((sub, i) => <SubjectCard key={sub.subjectCode + i} s={sub} />)}
+                    {attendanceResult.subjects.map((sub, i) => <SubjectCard key={sub.subjectCode + i} s={sub} showIndicator={viewMode !== 'daily'} />)}
 
                     <View style={{ height: 80 }} />
                 </ScrollView>
