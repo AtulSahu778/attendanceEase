@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Linking
 
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
 import { ViewMode } from '../types';
@@ -101,7 +101,7 @@ export default function HomeScreen() {
         <View style={s.screen}>
 
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom + 100, 120) }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
 
                 {/* Header */}
                 <Animated.View style={[s.headerRow, animHeader, { paddingTop: Math.max(insets.top + 16, 64) }]}>
@@ -223,7 +223,7 @@ export default function HomeScreen() {
             </ScrollView>
 
             {/* Footer — floating pill at bottom */}
-            <View pointerEvents="box-none" style={{ position: 'absolute', bottom: Math.max(insets.bottom + 16, 16), left: 0, right: 0, alignItems: 'center' }}>
+            <View pointerEvents="box-none" style={{ position: 'absolute', bottom: Math.max(insets.bottom, 16), left: 0, right: 0, alignItems: 'center' }}>
                 <BlurView intensity={20} tint="dark" style={{ alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 0.3, fontWeight: '500', marginRight: 16 }}>

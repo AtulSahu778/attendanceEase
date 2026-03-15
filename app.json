@@ -18,10 +18,16 @@
       "bundleIdentifier": "com.attendease.app"
     },
     "icon": "./assets/favicon_io/android-chrome-512x512.png",
+    "splash": {
+      "image": "./assets/favicon_io/android-chrome-512x512.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0B0B"
+    },
     "android": {
       "package": "com.attendease.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0F172A"
+        "foregroundImage": "./assets/favicon_io/android-chrome-512x512.png",
+        "backgroundColor": "#0B0B0B"
       }
     },
     "web": {

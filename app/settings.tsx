@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Linking, StyleSheet, Animated } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/useAppStore';
@@ -142,7 +142,7 @@ export default function SettingsScreen() {
 
             <ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 100, 120) }}
+                contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 24, 24) }}
                 showsVerticalScrollIndicator={false}
             >
                 <Animated.View style={animBody}>
@@ -266,6 +266,17 @@ export default function SettingsScreen() {
                     <View style={s.section}>
                         <Text style={s.sectionLabel}>APP</Text>
                         <View style={s.card}>
+                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://expo.dev/accounts/ofcatul/projects/atulsahu/builds/c7680a34-3bc4-4128-9eb0-4f5a1159ff11')} activeOpacity={0.7}>
+                                <View style={[s.rowIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
+                                    <Ionicons name="megaphone-outline" size={18} color="#3B82F6" />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 14 }}>
+                                    <Text style={s.rowTitle}>App Updates</Text>
+                                    <Text style={s.caption}>Download latest via Expo </Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={16} color="#374151" />
+                            </TouchableOpacity>
+                            <View style={s.divider} />
                             <TouchableOpacity style={s.rowItem} onPress={checkForUpdatesManual} activeOpacity={0.7}>
                                 <View style={[s.rowIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
                                     <Ionicons name="cloud-download-outline" size={18} color="#22C55E" />
@@ -393,7 +404,7 @@ export default function SettingsScreen() {
                     </View>
 
                     {/* Footer */}
-                    <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 40 }}>
+                    <View style={{ alignItems: 'center', marginTop: 32, marginBottom: 16 }}>
                         <View style={{ backgroundColor: '#121212', borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10 }}>
                                 <Text style={{ color: '#9CA3AF', fontSize: 13, fontWeight: '500', marginRight: 12 }}>Built by Atul</Text>
