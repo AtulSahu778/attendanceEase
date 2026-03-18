@@ -101,7 +101,7 @@ export default function HomeScreen() {
         <View style={s.screen}>
 
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom + 120, 140) }} showsVerticalScrollIndicator={false}>
 
                 {/* Header */}
                 <Animated.View style={[s.headerRow, animHeader, { paddingTop: Math.max(insets.top + 16, 64) }]}>
@@ -163,6 +163,11 @@ export default function HomeScreen() {
                                 onPress={() => setViewMode(mode.key)}
                                 activeOpacity={0.8}
                             >
+                                <Ionicons 
+                                    name={mode.icon as any} 
+                                    size={16} 
+                                    color={viewMode === mode.key ? '#FFFFFF' : '#9CA3AF'} 
+                                />
                                 <Text style={[s.tabText, viewMode === mode.key && s.tabTextActive]}>{mode.label}</Text>
                             </TouchableOpacity>
                         ))}
@@ -218,8 +223,8 @@ export default function HomeScreen() {
                     )}
                 </Animated.View>
 
-                {/* Spacer */}
-                <View style={{ height: 40 }} />
+                {/* Flexible Spacer for long screens */}
+                <View style={{ flex: 1, minHeight: 60 }} />
             </ScrollView>
 
             {/* Footer — floating pill at bottom */}
@@ -267,15 +272,15 @@ const s = StyleSheet.create({
     cacheBannerText: { fontSize: 12, color: '#F59E0B', fontWeight: '500', letterSpacing: -0.2 },
 
     sectionLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 1, color: '#9CA3AF' },
-    tabContainer: { flexDirection: 'row', backgroundColor: '#121212', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8 },
-    tabActive: { backgroundColor: '#262626' },
+    tabContainer: { flexDirection: 'row', backgroundColor: '#141414', borderRadius: 30, padding: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+    tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 24, flexDirection: 'row', gap: 6 },
+    tabActive: { backgroundColor: '#1F1F1F' },
     tabText: { fontSize: 14, color: '#9CA3AF', fontWeight: '500' },
     tabTextActive: { color: '#FFFFFF', fontWeight: '600' },
 
     bigPct: { fontSize: 36, fontWeight: '700', letterSpacing: -1 },
-    ctaButton: { backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
-    ctaText: { color: '#000000', fontSize: 16, fontWeight: '600' },
+    ctaButton: { backgroundColor: '#FFFFFF', borderRadius: 40, paddingVertical: 18, paddingHorizontal: 24, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
+    ctaText: { color: '#000000', fontSize: 18, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
     bodyText: { fontSize: 14, color: '#FFFFFF' },
     caption: { fontSize: 12, color: '#6B7280' },
 });

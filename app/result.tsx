@@ -8,10 +8,10 @@ import { ViewMode, SubjectRow } from '../types';
 import { DonationBanner, DonationModal } from '../components/Donation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const VIEW_MODES: { key: ViewMode; label: string }[] = [
-    { key: 'overall', label: 'Overall' },
-    { key: 'daily', label: 'Daily' },
-    { key: 'monthly', label: 'Monthly' },
+const VIEW_MODES: { key: ViewMode; label: string; icon: string }[] = [
+    { key: 'overall', label: 'Overall', icon: 'stats-chart' },
+    { key: 'daily', label: 'Daily', icon: 'today' },
+    { key: 'monthly', label: 'Monthly', icon: 'calendar' },
 ];
 
 function pctColor(p: number) {
@@ -139,6 +139,7 @@ export default function ResultScreen() {
                 <View style={st.tabContainer}>
                     {VIEW_MODES.map((m) => (
                         <TouchableOpacity key={m.key} style={[st.tab, viewMode === m.key && st.tabActive]} onPress={() => setViewMode(m.key)} activeOpacity={0.8}>
+                            <Ionicons name={m.icon as any} size={16} color={viewMode === m.key ? '#FFFFFF' : '#9CA3AF'} />
                             <Text style={[st.tabText, viewMode === m.key && st.tabTextActive]}>{m.label}</Text>
                         </TouchableOpacity>
                     ))}
@@ -206,7 +207,7 @@ export default function ResultScreen() {
 
             {/* Results */}
             {attendanceResult && !isLoading && (
-                <ScrollView style={{ flex: 1, paddingHorizontal: 16, marginTop: 16 }} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 40, 80) }} showsVerticalScrollIndicator={false}>
+                <ScrollView style={{ flex: 1, paddingHorizontal: 16, marginTop: 16 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom + 120, 140) }} showsVerticalScrollIndicator={false}>
 
                     {/* Student Card */}
                     <View style={[st.card, { marginBottom: 16 }]}>
@@ -239,7 +240,7 @@ export default function ResultScreen() {
                     {/* Subjects list */}
                     {attendanceResult.subjects.map((sub, i) => <SubjectCard key={sub.subjectCode + i} s={sub} showIndicator={viewMode !== 'daily'} />)}
 
-                    <View style={{ height: 80 }} />
+                    <View style={{ flex: 1, minHeight: 80 }} />
                 </ScrollView>
             )}
 
@@ -261,9 +262,9 @@ const st = StyleSheet.create({
 
     heroPct: { fontSize: 42, fontWeight: '700', letterSpacing: -1 },
 
-    tabContainer: { flexDirection: 'row', backgroundColor: '#121212', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-    tab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8 },
-    tabActive: { backgroundColor: '#262626' },
+    tabContainer: { flexDirection: 'row', backgroundColor: '#141414', borderRadius: 30, padding: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+    tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 24, flexDirection: 'row', gap: 6 },
+    tabActive: { backgroundColor: '#1F1F1F' },
     tabText: { fontSize: 14, fontWeight: '500', color: '#9CA3AF' },
     tabTextActive: { color: '#FFFFFF', fontWeight: '600' },
 
