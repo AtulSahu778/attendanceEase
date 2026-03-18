@@ -226,6 +226,11 @@ export default function ResultScreen() {
                     {/* Overall % Hero */}
                     <View style={[st.card, { marginBottom: 24, flexDirection: 'row', alignItems: 'center' }]}>
                         <View style={{ flex: 1 }}>
+                            <Text style={[st.textSecondary, { fontSize: 11, fontWeight: '700', color: '#6B7280', marginBottom: 4, letterSpacing: 0.8 }]}>
+                                {viewMode === 'overall' ? 'ALL-TIME' : 
+                                 viewMode === 'daily' ? 'TODAY' : 
+                                 'THIS MONTH'}
+                            </Text>
                             <Text style={[st.heroPct, { color: pctColor(overallPct) }]}>{overallPct.toFixed(1)}%</Text>
                             <Text style={st.textSecondary}>
                                 {attendanceResult.subjects.reduce((a, r) => a + r.totalPresent, 0)} / {attendanceResult.subjects.reduce((a, r) => a + r.totalClasses, 0)} classes

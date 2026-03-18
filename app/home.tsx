@@ -69,7 +69,19 @@ export default function HomeScreen() {
     const animResult = useFade(150);
     const animCta = useFade(200);
 
+    // ─── Card cross-fade when switching tabs ───
+    const cardFade = useRef(new Animated.Value(1)).current;
+    useEffect(() => {
+        Animated.sequence([
+            Animated.timing(cardFade, { toValue: 0.4, duration: 120, useNativeDriver: true }),
+            Animated.timing(cardFade, { toValue: 1, duration: 250, useNativeDriver: true }),
+        ]).start();
+    }, [viewMode]);
+
     useEffect(() => { getLastCacheTimestamp().then(setLastSynced); }, [attendanceResult]);
+
+    // ─── Re-fetch when view mode changes ───
+    useEffect(() => { fetchAttendance(false); }, [viewMode]);
 
     // ─── Cooldown timer ───
     useEffect(() => {
@@ -175,11 +187,22 @@ export default function HomeScreen() {
                 </Animated.View>
 
                 {/* Quick Result Card */}
-                {attendanceResult && !isLoading && (
-                    <Animated.View style={[{ marginHorizontal: 16, marginTop: 16 }, animResult]}>
+                {attendanceResult && (
+                    <Animated.View style={[{ marginHorizontal: 16, marginTop: 16 }, animResult, { opacity: cardFade }]}>
                         <View style={s.card}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                <Text style={s.sectionLabel}>OVERALL</Text>
+                                <View>
+                                    <Text style={s.sectionLabel}>
+                                        {viewMode === 'overall' ? 'OVERALL' : 
+                                         viewMode === 'daily' ? 'TODAY' : 
+                                         'THIS MONTH'}
+                                    </Text>
+                                    <Text style={[s.caption, { fontSize: 10, marginTop: 2, color: '#6B7280', letterSpacing: 0.2 }]}>
+                                        {viewMode === 'overall' ? 'All-time' : 
+                                         viewMode === 'daily' ? 'Day view' : 
+                                         'Month view'}
+                                    </Text>
+                                </View>
                                 {lastSynced && <Text style={s.caption}>{timeAgo(lastSynced)}</Text>}
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
