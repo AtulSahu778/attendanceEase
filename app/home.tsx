@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Linking } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, Linking, ActivityIndicator } from 'react-native';
 
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,10 +53,31 @@ function useFade(delay = 0) {
     return { opacity: fade };
 }
 
+function SkeletonCard() {
+    const pulse = useRef(new Animated.Value(0.4)).current;
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(pulse, { toValue: 0.9, duration: 700, useNativeDriver: true }),
+                Animated.timing(pulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
+    return (
+        <Animated.View style={[{ marginHorizontal: 16, marginTop: 16 }, { opacity: pulse }]}>
+            <View style={{ backgroundColor: '#121212', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 16 }}>
+                <View style={{ width: 80, height: 11, backgroundColor: '#1F1F1F', borderRadius: 6, marginBottom: 16 }} />
+                <View style={{ width: 120, height: 36, backgroundColor: '#1F1F1F', borderRadius: 8, marginBottom: 10 }} />
+                <View style={{ width: 100, height: 11, backgroundColor: '#1F1F1F', borderRadius: 6 }} />
+            </View>
+        </Animated.View>
+    );
+}
+
 export default function HomeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const { profile, viewMode, setViewMode, fetchAttendance, isLoading, attendanceResult, isCachedData, cooldownEnd } = useAppStore();
+    const { profile, viewMode, setViewMode, fetchAttendance, isLoading, attendanceResult, isCachedData, cooldownEnd, setSelectedDate } = useAppStore();
     const [lastSynced, setLastSynced] = useState<string | null>(null);
     const [showDonation, setShowDonation] = useState(false);
     const [cooldownRemaining, setCooldownRemaining] = useState(0);
@@ -77,6 +98,14 @@ export default function HomeScreen() {
             Animated.timing(cardFade, { toValue: 1, duration: 250, useNativeDriver: true }),
         ]).start();
     }, [viewMode]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const today = new Date();
+            const fmt = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+            setSelectedDate(fmt);
+        }, [setSelectedDate])
+    );
 
     useEffect(() => { getLastCacheTimestamp().then(setLastSynced); }, [attendanceResult]);
 
@@ -186,8 +215,10 @@ export default function HomeScreen() {
                     </View>
                 </Animated.View>
 
-                {/* Quick Result Card */}
-                {attendanceResult && (
+                {/* Quick Result Card or Skeleton */}
+                {isLoading && !attendanceResult ? (
+                    <SkeletonCard />
+                ) : attendanceResult ? (
                     <Animated.View style={[{ marginHorizontal: 16, marginTop: 16 }, animResult, { opacity: cardFade }]}>
                         <View style={s.card}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -215,29 +246,40 @@ export default function HomeScreen() {
                             </View>
                         </View>
                     </Animated.View>
-                )}
+                 ) : null}
+
 
                 {/* CTA */}
                 <Animated.View style={[{ paddingHorizontal: 16, marginTop: 24 }, animCta]}>
                     <Animated.View style={{ transform: [{ scale: ctaScale.scale }] }}>
                         <TouchableOpacity
-                            style={[s.ctaButton, (isLoading || isCoolingDown) && { opacity: 0.7 }]}
+                            style={[s.ctaButton, (isLoading || isCoolingDown) && { opacity: 0.8 }]}
                             onPress={handleCheck}
                             onPressIn={ctaScale.onPressIn}
                             onPressOut={ctaScale.onPressOut}
                             disabled={isLoading || isCoolingDown}
                             activeOpacity={0.9}
                         >
-                            {isLoading ? null : <Ionicons name="server-outline" size={18} color="#000000" style={{ marginRight: 8 }} />}
+                            {isLoading ? (
+                                <ActivityIndicator size="small" color="#000000" style={{ marginRight: 10 }} />
+                            ) : (
+                                <Ionicons name="server-outline" size={18} color="#000000" style={{ marginRight: 8 }} />
+                            )}
                             <Text style={s.ctaText}>
                                 {isLoading
-                                    ? 'Loading...'
+                                    ? 'Checking...'
                                     : isCoolingDown
                                         ? `Wait ${cooldownRemaining}s`
                                         : 'Check Attendance'}
                             </Text>
                         </TouchableOpacity>
                     </Animated.View>
+
+                    {isCoolingDown && (
+                        <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 2, marginTop: 16, overflow: 'hidden', marginHorizontal: 20 }}>
+                            <View style={{ width: `${(cooldownRemaining / 30) * 100}%`, height: '100%', backgroundColor: '#FFFFFF', opacity: 0.8 }} />
+                        </View>
+                    )}
 
                     {lastSynced && (
                         <Text style={[s.caption, { textAlign: 'center', marginTop: 14 }]}>

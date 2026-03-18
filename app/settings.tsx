@@ -243,8 +243,11 @@ export default function SettingsScreen() {
                     <View style={s.section}>
                         <Text style={s.sectionLabel}>USAGE</Text>
                         <View style={s.card}>
-                            <View style={s.statRow}>
-                                <Text style={s.statLabel}>API Requests Today</Text>
+                            <View style={[s.statRow, { alignItems: 'flex-start' }]}>
+                                <View>
+                                    <Text style={s.statLabel}>Today's Requests</Text>
+                                    <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Max 50 per day</Text>
+                                </View>
                                 <Text style={[s.statValue, dailyCount >= dailyMax && { color: '#EF4444' }]}>
                                     {dailyCount} / {dailyMax}
                                 </Text>
@@ -454,7 +457,7 @@ const s = StyleSheet.create({
     pickerText: { fontSize: 15, color: '#6B7280' },
     pickerTextActive: { color: '#fff', fontWeight: '600' },
 
-    saveBtn: { backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+    saveBtn: { backgroundColor: '#FFFFFF', borderRadius: 40, paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
     saveBtnSuccess: { backgroundColor: '#22C55E' },
     saveBtnText: { color: '#000', fontSize: 16, fontWeight: '600' },
 

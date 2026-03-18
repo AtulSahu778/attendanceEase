@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, TextInput, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated, TextInput, Linking, Platform, Modal } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +43,106 @@ function AnimatedProgressBar({ percentage }: { percentage: number }) {
         <View style={st.progressBarTrack}>
             <View style={[st.progressBarFill, { width: `${percentage}%`, backgroundColor: color }]} />
         </View>
+    );
+}
+
+// -- Pure JS Calendar Component --
+function CustomDatePickerModal({ visible, onClose, onSelect, initialDate }: { visible: boolean, onClose: () => void, onSelect: (date: string) => void, initialDate: string }) {
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+
+    useEffect(() => {
+        if (visible) {
+            const d = initialDate ? new Date(initialDate) : new Date();
+            if (!isNaN(d.getTime())) setCurrentMonth(d);
+        }
+    }, [visible, initialDate]);
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+    const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+    const daysInMonth = getDaysInMonth(year, month);
+    const firstDay = getFirstDayOfMonth(year, month);
+
+    const days = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+    const handlePrev = () => setCurrentMonth(new Date(year, month - 1, 1));
+    const handleNext = () => setCurrentMonth(new Date(year, month + 1, 1));
+
+    const handleSelect = (day: number) => {
+        const d = new Date(year, month, day);
+        const fmt = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        onSelect(fmt);
+    };
+
+    return (
+        <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+                <View style={{ width: '100%', maxWidth: 340, backgroundColor: '#1A1A1A', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    
+                    {/* Header */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <TouchableOpacity onPress={handlePrev} style={{ padding: 8 }}>
+                            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                        <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>
+                            {currentMonth.toLocaleString('default', { month: 'long' })} {year}
+                        </Text>
+                        <TouchableOpacity onPress={handleNext} style={{ padding: 8 }}>
+                            <Ionicons name="chevron-forward" size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Weekdays */}
+                    <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                            <Text key={d} style={{ flex: 1, textAlign: 'center', color: '#9CA3AF', fontSize: 13, fontWeight: '600' }}>{d}</Text>
+                        ))}
+                    </View>
+
+                    {/* Grid */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                        {days.map((day, idx) => {
+                            if (!day) return <View key={idx} style={{ width: '14.28%', aspectRatio: 1 }} />;
+                            
+                            const isSelected = initialDate === `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
+
+                            return (
+                                <TouchableOpacity
+                                    key={idx}
+                                    onPress={() => handleSelect(day)}
+                                    style={{
+                                        width: '14.28%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center',
+                                    }}
+                                >
+                                    <View style={{
+                                        width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center',
+                                        backgroundColor: isSelected ? '#FFFFFF' : isToday ? 'rgba(255,255,255,0.1)' : 'transparent'
+                                    }}>
+                                        <Text style={{ color: isSelected ? '#000000' : isToday ? '#FFFFFF' : '#D1D5DB', fontSize: 14, fontWeight: isSelected || isToday ? '700' : '400' }}>
+                                            {day}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    {/* Cancel Btn */}
+                    <View style={{ marginTop: 24, alignItems: 'flex-end' }}>
+                        <TouchableOpacity onPress={onClose} style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+                            <Text style={{ color: '#9CA3AF', fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </View>
+            </View>
+        </Modal>
     );
 }
 
@@ -92,6 +192,8 @@ export default function ResultScreen() {
     const [dateInput, setDateInput] = useState(selectedDate);
     const [showDonation, setShowDonation] = useState(false);
     const [retryCooldown, setRetryCooldown] = useState(false);
+    const [dateMode, setDateMode] = useState<'today' | 'yesterday' | 'custom'>('today');
+    const [showPicker, setShowPicker] = useState(false);
     const insets = useSafeAreaInsets();
     const backScale = usePressScale();
     const refreshScale = usePressScale();
@@ -145,56 +247,94 @@ export default function ResultScreen() {
                     ))}
                 </View>
 
-                {viewMode === 'daily' && (
-                    <TouchableOpacity onPress={() => setShowDateInput(!showDateInput)} style={{ marginTop: 12 }}>
-                        <View style={[st.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Ionicons name="calendar-outline" size={16} color="#9CA3AF" />
-                                <Text style={st.textSecondary}>{selectedDate}</Text>
+                {viewMode === 'daily' && (() => {
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(today.getDate() - 1);
+                    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    const DATE_PILLS: { key: 'today' | 'yesterday' | 'custom'; label: string }[] = [
+                        { key: 'today', label: 'Today' },
+                        { key: 'yesterday', label: 'Yesterday' },
+                        { key: 'custom', label: 'Custom' },
+                    ];
+                    const applyDate = (mode: 'today' | 'yesterday' | 'custom', custom?: string) => {
+                        setDateMode(mode);
+                        if (mode === 'today') { setSelectedDate(fmt(today)); setTimeout(() => fetchAttendance(true), 100); }
+                        else if (mode === 'yesterday') { setSelectedDate(fmt(yesterday)); setTimeout(() => fetchAttendance(true), 100); }
+                        else if (mode === 'custom' && custom) { setSelectedDate(custom); setTimeout(() => fetchAttendance(true), 100); }
+                    };
+                    return (
+                        <View style={{ marginTop: 12, gap: 8 }}>
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                                {DATE_PILLS.map(p => (
+                                    <TouchableOpacity
+                                        key={p.key}
+                                        onPress={() => applyDate(p.key === 'custom' ? 'custom' : p.key)}
+                                        style={[st.datePill, dateMode === p.key && st.datePillActive]}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={[st.datePillText, dateMode === p.key && st.datePillTextActive]}>{p.label}</Text>
+                                    </TouchableOpacity>
+                                ))}
                             </View>
-                            <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
+                            {dateMode === 'custom' && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <TouchableOpacity
+                                        style={[{ flex: 1, backgroundColor: '#141414', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' }]}
+                                        onPress={() => setShowPicker(true)}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                            <Ionicons name="calendar-outline" size={16} color="#9CA3AF" />
+                                            <Text style={{ fontSize: 14, color: selectedDate.length > 0 ? '#FFFFFF' : '#4B5563' }}>
+                                                {selectedDate || 'Select Date...'}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                            
+                            {showPicker && (
+                                <CustomDatePickerModal
+                                    visible={showPicker}
+                                    initialDate={selectedDate || fmt(new Date())}
+                                    onClose={() => setShowPicker(false)}
+                                    onSelect={(selectedStr) => {
+                                        applyDate('custom', selectedStr);
+                                        setShowPicker(false);
+                                    }}
+                                />
+                            )}
                         </View>
-                    </TouchableOpacity>
-                )}
-                {viewMode === 'daily' && showDateInput && (
-                    <View style={[st.card, { marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 }]}>
-                        <TextInput
-                            style={[st.bodyText, { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }]}
-                            placeholder="YYYY-MM-DD" placeholderTextColor="#6B7280"
-                            value={dateInput} onChangeText={setDateInput}
-                        />
-                        <TouchableOpacity
-                            style={{ backgroundColor: '#FFFFFF', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 }}
-                            onPress={() => { setSelectedDate(dateInput); setShowDateInput(false); setTimeout(() => fetchAttendance(true), 100); }}
-                        >
-                            <Text style={{ color: '#000000', fontWeight: '600', fontSize: 13 }}>Go</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
+                    );
+                })()}
             </Animated.View>
 
             {/* Cached Banner */}
             {isCachedData && attendanceResult && (
-                <View style={[st.banner, { backgroundColor: 'rgba(255,159,10,0.15)', borderColor: 'rgba(255,159,10,0.35)' }]}>
-                    <Ionicons name="cloud-offline-outline" size={16} color="rgb(255,159,10)" />
-                    <Text style={{ color: 'rgb(255,159,10)', fontSize: 11, flex: 1, marginLeft: 8 }}>
-                        Cached from {timeAgo(attendanceResult.fetchedAt)}
-                    </Text>
-                    <TouchableOpacity onPress={handleRetry} disabled={retryCooldown}>
-                        <Text style={{ color: retryCooldown ? 'rgba(255,159,10,0.4)' : 'rgb(255,159,10)', fontWeight: '700', fontSize: 12 }}>{retryCooldown ? 'Wait…' : 'Retry'}</Text>
-                    </TouchableOpacity>
-                </View>
+                <Animated.View style={{ opacity: fade }}>
+                    <View style={[st.banner, { backgroundColor: 'rgba(255,159,10,0.15)', borderColor: 'rgba(255,159,10,0.35)' }]}>
+                        <Ionicons name="cloud-offline-outline" size={16} color="rgb(255,159,10)" />
+                        <Text style={{ color: 'rgb(255,159,10)', fontSize: 11, flex: 1, marginLeft: 8 }}>
+                            Cached from {timeAgo(attendanceResult.fetchedAt)}
+                        </Text>
+                        <TouchableOpacity onPress={handleRetry} disabled={retryCooldown}>
+                            <Text style={{ color: retryCooldown ? 'rgba(255,159,10,0.4)' : 'rgb(255,159,10)', fontWeight: '700', fontSize: 12 }}>{retryCooldown ? 'Wait…' : 'Retry'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </Animated.View>
             )}
 
             {/* Error */}
             {error && !isCachedData && (
-                <View style={[st.banner, { backgroundColor: 'rgba(255,59,48,0.12)', borderColor: 'rgba(255,59,48,0.30)' }]}>
-                    <Text style={{ color: 'rgb(255,59,48)', fontWeight: '600', marginBottom: 6 }}>Error</Text>
-                    <Text style={{ color: 'rgba(255,100,90,0.9)', fontSize: 13, marginBottom: 10 }}>{error.message}</Text>
-                    <TouchableOpacity style={{ backgroundColor: retryCooldown ? 'rgba(255,59,48,0.1)' : 'rgba(255,59,48,0.2)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, alignSelf: 'flex-start' }} onPress={handleRetry} disabled={retryCooldown}>
-                        <Text style={{ color: retryCooldown ? 'rgba(255,59,48,0.4)' : 'rgb(255,59,48)', fontWeight: '600', fontSize: 12 }}>{retryCooldown ? 'Wait 5s…' : 'Retry'}</Text>
-                    </TouchableOpacity>
-                </View>
+                <Animated.View style={{ opacity: fade }}>
+                    <View style={[st.banner, { backgroundColor: 'rgba(255,59,48,0.12)', borderColor: 'rgba(255,59,48,0.30)' }]}>
+                        <Text style={{ color: 'rgb(255,59,48)', fontWeight: '600', marginBottom: 6 }}>Error</Text>
+                        <Text style={{ color: 'rgba(255,100,90,0.9)', fontSize: 13, marginBottom: 10 }}>{error.message}</Text>
+                        <TouchableOpacity style={{ backgroundColor: retryCooldown ? 'rgba(255,59,48,0.1)' : 'rgba(255,59,48,0.2)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7, alignSelf: 'flex-start' }} onPress={handleRetry} disabled={retryCooldown}>
+                            <Text style={{ color: retryCooldown ? 'rgba(255,59,48,0.4)' : 'rgb(255,59,48)', fontWeight: '600', fontSize: 12 }}>{retryCooldown ? 'Wait 5s…' : 'Retry'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </Animated.View>
             )}
 
             {/* Loading */}
@@ -285,4 +425,9 @@ const st = StyleSheet.create({
 
     bodyText: { fontSize: 15, color: '#FFFFFF' },
     textSecondary: { fontSize: 14, color: '#9CA3AF', marginTop: 2 },
+
+    datePill: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, backgroundColor: '#141414', borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)' },
+    datePillActive: { backgroundColor: '#232323', borderColor: 'rgba(255,255,255,0.18)' },
+    datePillText: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
+    datePillTextActive: { color: '#FFFFFF', fontWeight: '600' },
 });

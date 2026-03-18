@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
     View, Text, TextInput, TouchableOpacity, ScrollView,
     KeyboardAvoidingView, Platform, Alert, StyleSheet, Animated, Image,
+    ActivityIndicator
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,8 @@ export default function SetupScreen() {
     const [rollNumber, setRollNumber] = useState('');
     const [semester, setSemester] = useState('I');
     const [displayName, setDisplayName] = useState('');
+    const [isFetchingName, setIsFetchingName] = useState(false);
+    const [nameFound, setNameFound] = useState(false);
     const [showSemPicker, setShowSemPicker] = useState(false);
     const { setProfile } = useAppStore();
     const router = useRouter();
@@ -45,8 +48,17 @@ export default function SetupScreen() {
     const handleRollBlur = async () => {
         const roll = rollNumber.trim();
         if (!roll || roll.length < 5) return;
-        const name = await fetchStudentName(roll, semester);
-        if (name) setDisplayName(name);
+        setIsFetchingName(true);
+        setNameFound(false);
+        try {
+            const name = await fetchStudentName(roll, semester);
+            if (name) {
+                setDisplayName(name);
+                setNameFound(true);
+            }
+        } finally {
+            setIsFetchingName(false);
+        }
     };
 
     const handleSave = async () => {
@@ -114,8 +126,30 @@ export default function SetupScreen() {
                                         autoCapitalize="characters"
                                         autoCorrect={false}
                                     />
+                                    {isFetchingName ? (
+                                        <ActivityIndicator size="small" color="rgba(255,255,255,0.4)" />
+                                    ) : nameFound ? (
+                                        <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                                    ) : null}
                                 </BlurView>
                             </View>
+
+                            {/* Name (Show only if fetching or found) */}
+                            {(isFetchingName || displayName !== '') && (
+                                <View style={s.fieldGroup}>
+                                    <Text style={s.fieldLabel}>DISPLAY NAME</Text>
+                                    <BlurView intensity={40} tint="dark" style={s.glassInput}>
+                                        <Ionicons name="person-outline" size={20} color="rgba(255,255,255,0.4)" />
+                                        <TextInput
+                                            style={s.textInput}
+                                            placeholder="Your Name"
+                                            placeholderTextColor="rgba(255,255,255,0.25)"
+                                            value={displayName}
+                                            onChangeText={setDisplayName}
+                                        />
+                                    </BlurView>
+                                </View>
+                            )}
 
                             {/* Semester */}
                             <View style={s.fieldGroup}>
