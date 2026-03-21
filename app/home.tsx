@@ -38,6 +38,11 @@ function maskRollNumber(roll: string): string {
     return roll.slice(0, -4) + '****';
 }
 
+function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function usePressScale(to = 0.98) {
     const scale = useRef(new Animated.Value(1)).current;
     const onPressIn = () => Animated.timing(scale, { toValue: to, duration: 100, useNativeDriver: true }).start();
@@ -225,12 +230,21 @@ export default function HomeScreen() {
                                 <View>
                                     <Text style={s.sectionLabel}>
                                         {viewMode === 'overall' ? 'OVERALL' : 
-                                         viewMode === 'daily' ? 'TODAY' : 
+                                         viewMode === 'daily' ? (
+                                            attendanceResult?.date === getTodayStr() ? 'TODAY' :
+                                            attendanceResult?.date
+                                                ? new Date(attendanceResult.date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }).toUpperCase()
+                                                : 'TODAY'
+                                         ) : 
                                          'THIS MONTH'}
                                     </Text>
                                     <Text style={[s.caption, { fontSize: 10, marginTop: 2, color: '#6B7280', letterSpacing: 0.2 }]}>
                                         {viewMode === 'overall' ? 'All-time' : 
-                                         viewMode === 'daily' ? 'Day view' : 
+                                         viewMode === 'daily' ? (
+                                            attendanceResult?.date
+                                                ? new Date(attendanceResult.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                                                : 'Day view'
+                                         ) : 
                                          'Month view'}
                                     </Text>
                                 </View>
@@ -238,7 +252,7 @@ export default function HomeScreen() {
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={[s.bigPct, { color: pctColor(pct) }]}>{pct.toFixed(1)}%</Text>
+                                    <Text style={[s.bigPct, { color: pctColor(pct) }]}>{Number(pct.toFixed(2))}%</Text>
                                 </View>
                                 <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
                                     <Text style={s.bodyText}>{attendanceResult.subjects.length} Subjects</Text>

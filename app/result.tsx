@@ -165,7 +165,7 @@ function SubjectCard({ s, showIndicator }: { s: SubjectRow; showIndicator?: bool
                     <Text style={st.statsText}>
                         Total: {s.totalClasses}   Present: {s.totalPresent}   Absent: {s.totalClasses - s.totalPresent}
                     </Text>
-                    <Text style={[st.pctValue, { color }]}>{s.percentage.toFixed(1)}%</Text>
+                    <Text style={[st.pctValue, { color }]}>{Number(s.percentage.toFixed(2))}%</Text>
                 </View>
 
                 {showIndicator && (() => {
@@ -371,7 +371,7 @@ export default function ResultScreen() {
                                  viewMode === 'daily' ? 'TODAY' : 
                                  'THIS MONTH'}
                             </Text>
-                            <Text style={[st.heroPct, { color: pctColor(overallPct) }]}>{overallPct.toFixed(1)}%</Text>
+                            <Text style={[st.heroPct, { color: pctColor(overallPct) }]}>{Number(overallPct.toFixed(2))}%</Text>
                             <Text style={st.textSecondary}>
                                 {attendanceResult.subjects.reduce((a, r) => a + r.totalPresent, 0)} / {attendanceResult.subjects.reduce((a, r) => a + r.totalClasses, 0)} classes
                             </Text>

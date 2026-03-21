@@ -269,26 +269,33 @@ export default function SettingsScreen() {
                     <View style={s.section}>
                         <Text style={s.sectionLabel}>APP</Text>
                         <View style={s.card}>
-                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://expo.dev/accounts/ofcatul/projects/atulsahu/builds/c7680a34-3bc4-4128-9eb0-4f5a1159ff11')} activeOpacity={0.7}>
-                                <View style={[s.rowIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
-                                    <Ionicons name="megaphone-outline" size={18} color="#3B82F6" />
+                            {/* Primary: EAS OTA update — most useful for regular users */}
+                            <TouchableOpacity style={s.rowItem} onPress={checkForUpdatesManual} activeOpacity={0.7}>
+                                <View style={[s.rowIcon, { backgroundColor: 'rgba(34,197,94,0.15)' }]}>
+                                    <Ionicons name="cloud-download-outline" size={18} color="#22C55E" />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={s.rowTitle}>App Updates</Text>
-                                    <Text style={s.caption}>Download latest via Expo </Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                        <Text style={s.rowTitle}>Check for Updates</Text>
+                                        <View style={s.recommendedBadge}>
+                                            <Text style={s.recommendedText}>RECOMMENDED</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={s.caption}>Instantly update the app in the background</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={16} color="#374151" />
                             </TouchableOpacity>
                             <View style={s.divider} />
-                            <TouchableOpacity style={s.rowItem} onPress={checkForUpdatesManual} activeOpacity={0.7}>
-                                <View style={[s.rowIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
-                                    <Ionicons name="cloud-download-outline" size={18} color="#22C55E" />
+                            {/* Secondary: Full reinstall via Expo build link */}
+                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://expo.dev/accounts/ofcatul/projects/atulsahu/builds/c7680a34-3bc4-4128-9eb0-4f5a1159ff11')} activeOpacity={0.7}>
+                                <View style={[s.rowIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
+                                    <Ionicons name="download-outline" size={18} color="#3B82F6" />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={s.rowTitle}>Check for Updates</Text>
-                                    <Text style={s.caption}>Download latest version OTA</Text>
+                                    <Text style={s.rowTitle}>Reinstall App</Text>
+                                    <Text style={s.caption}>Download & install a fresh copy of the app</Text>
                                 </View>
-                                <Ionicons name="chevron-forward" size={16} color="#374151" />
+                                <Ionicons name="open-outline" size={15} color="#374151" />
                             </TouchableOpacity>
                             <View style={s.divider} />
                             <TouchableOpacity style={s.rowItem} onPress={() => router.push('/privacy')} activeOpacity={0.7}>
@@ -465,6 +472,8 @@ const s = StyleSheet.create({
     rowIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     rowTitle: { fontSize: 15, color: '#FFFFFF', fontWeight: '500', letterSpacing: -0.3 },
     caption: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+    recommendedBadge: { backgroundColor: 'rgba(34,197,94,0.15)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+    recommendedText: { fontSize: 9, color: '#22C55E', fontWeight: '700', letterSpacing: 0.5 },
 
     statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
     statLabel: { fontSize: 14, color: '#9CA3AF' },

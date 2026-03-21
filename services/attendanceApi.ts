@@ -321,27 +321,14 @@ export async function fetchMonthlyAttendance(
 
         const student = buildStudent(data[0], cleanSem);
 
-        // Monthly: aggregate totalClasses + totalPresent per subject across months
-        const subjectMap = new Map<string, { code: string; title: string; total: number; present: number }>();
-        for (const item of data) {
-            const code = item.subjectCode || '';
-            const classes = parseInt(item.totalClasses || '0', 10);
-            const present = parseInt(item.totalPresent || '0', 10);
-            const existing = subjectMap.get(code);
-            if (existing) {
-                existing.total += classes;
-                existing.present += present;
-            } else {
-                subjectMap.set(code, { code, title: cleanTitle(item.subjectTitle), total: classes, present });
-            }
-        }
-
-        const subjects: SubjectRow[] = Array.from(subjectMap.values()).map((s) => ({
-            subjectCode: s.code,
-            subjectTitle: s.title,
-            totalClasses: s.total,
-            totalPresent: s.present,
-            percentage: s.total > 0 ? Math.round((s.present / s.total) * 10000) / 100 : 0,
+        // 100% Consistency: Map the monthly data exactly as the portal returns it,
+        // without attempting to aggregate or alter the portal's own percentage calculations.
+        const subjects: SubjectRow[] = data.map((item) => ({
+            subjectCode: item.subjectCode || '',
+            subjectTitle: cleanTitle(item.subjectTitle),
+            totalClasses: parseInt(item.totalClasses || '0', 10),
+            totalPresent: parseInt(item.totalPresent || '0', 10),
+            percentage: parsePct(item.percentage),
         }));
 
         return { student, subjects };
