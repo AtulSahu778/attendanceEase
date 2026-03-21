@@ -239,14 +239,14 @@ export default function SettingsScreen() {
                         </Animated.View>
                     </View>
 
-                    {/* ── Usage Stats ── */}
+                    {/* ── Sync Status ── */}
                     <View style={s.section}>
-                        <Text style={s.sectionLabel}>USAGE</Text>
+                        <Text style={s.sectionLabel}>SYNC STATUS</Text>
                         <View style={s.card}>
                             <View style={[s.statRow, { alignItems: 'flex-start' }]}>
                                 <View>
-                                    <Text style={s.statLabel}>Today's Requests</Text>
-                                    <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Max 50 per day</Text>
+                                    <Text style={s.statLabel}>Daily Syncs Used</Text>
+                                    <Text style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>Resets at midnight</Text>
                                 </View>
                                 <Text style={[s.statValue, dailyCount >= dailyMax && { color: '#EF4444' }]}>
                                     {dailyCount} / {dailyMax}
@@ -254,22 +254,21 @@ export default function SettingsScreen() {
                             </View>
                             <View style={s.divider} />
                             <View style={s.statRow}>
-                                <Text style={s.statLabel}>Last Fetch</Text>
+                                <Text style={s.statLabel}>Last Synced</Text>
                                 <Text style={s.statValue}>{lastFetch ? timeAgo(lastFetch) : 'Never'}</Text>
                             </View>
                             <View style={s.divider} />
                             <View style={s.statRow}>
-                                <Text style={s.statLabel}>Cache Age</Text>
-                                <Text style={s.statValue}>{cacheAge ? timeAgo(cacheAge) : 'No cache'}</Text>
+                                <Text style={s.statLabel}>Data Saved</Text>
+                                <Text style={s.statValue}>{cacheAge ? timeAgo(cacheAge) : 'No offline data'}</Text>
                             </View>
                         </View>
                     </View>
 
-                    {/* ── App ── */}
+                    {/* ── General ── */}
                     <View style={s.section}>
-                        <Text style={s.sectionLabel}>APP</Text>
+                        <Text style={s.sectionLabel}>GENERAL</Text>
                         <View style={s.card}>
-                            {/* Primary: EAS OTA update — most useful for regular users */}
                             <TouchableOpacity style={s.rowItem} onPress={checkForUpdatesManual} activeOpacity={0.7}>
                                 <View style={[s.rowIcon, { backgroundColor: 'rgba(34,197,94,0.15)' }]}>
                                     <Ionicons name="cloud-download-outline" size={18} color="#22C55E" />
@@ -281,45 +280,55 @@ export default function SettingsScreen() {
                                             <Text style={s.recommendedText}>RECOMMENDED</Text>
                                         </View>
                                     </View>
-                                    <Text style={s.caption}>Instantly update the app in the background</Text>
+                                    <Text style={s.caption}>Get the latest improvements instantly</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={16} color="#374151" />
                             </TouchableOpacity>
                             <View style={s.divider} />
-                            {/* Secondary: Full reinstall via Expo build link */}
                             <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://expo.dev/accounts/ofcatul/projects/atulsahu/builds/c7680a34-3bc4-4128-9eb0-4f5a1159ff11')} activeOpacity={0.7}>
                                 <View style={[s.rowIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
                                     <Ionicons name="download-outline" size={18} color="#3B82F6" />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 14 }}>
                                     <Text style={s.rowTitle}>Reinstall App</Text>
-                                    <Text style={s.caption}>Download & install a fresh copy of the app</Text>
+                                    <Text style={s.caption}>Download a fresh copy of the app</Text>
+                                </View>
+                                <Ionicons name="open-outline" size={15} color="#374151" />
+                            </TouchableOpacity>
+                            <View style={s.divider} />
+                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://sxcran.ac.in/Student/AttendanceSummary')} activeOpacity={0.7}>
+                                <View style={[s.rowIcon, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
+                                    <Ionicons name="globe-outline" size={18} color="#3B82F6" />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 14 }}>
+                                    <Text style={s.rowTitle}>College Portal</Text>
+                                    <Text style={s.caption}>View your official attendance</Text>
                                 </View>
                                 <Ionicons name="open-outline" size={15} color="#374151" />
                             </TouchableOpacity>
                             <View style={s.divider} />
                             <TouchableOpacity style={s.rowItem} onPress={() => router.push('/privacy')} activeOpacity={0.7}>
-                                <View style={[s.rowIcon, { backgroundColor: 'rgba(34,197,94,0.12)' }]}>
-                                    <Ionicons name="shield-checkmark-outline" size={18} color="#22C55E" />
+                                <View style={[s.rowIcon, { backgroundColor: 'rgba(168,85,247,0.12)' }]}>
+                                    <Ionicons name="shield-checkmark-outline" size={18} color="#A855F7" />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 14 }}>
                                     <Text style={s.rowTitle}>Privacy Notice</Text>
-                                    <Text style={s.caption}>How your data is handled</Text>
+                                    <Text style={s.caption}>See how we use your data</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={16} color="#374151" />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* ── Data ── */}
+                    {/* ── Danger Zone ── */}
                     <View style={s.section}>
-                        <Text style={s.sectionLabel}>DATA</Text>
+                        <Text style={s.sectionLabel}>DANGER ZONE</Text>
                         <View style={s.card}>
                             <TouchableOpacity
                                 style={s.rowItem}
-                                onPress={() => Alert.alert('Clear Cache', 'Remove cached attendance data?', [
+                                onPress={() => Alert.alert('Refresh Data', 'This will clear offline saved data. The app will fetch fresh data seamlessly on next load.', [
                                     { text: 'Cancel' },
-                                    { text: 'Clear', style: 'destructive', onPress: () => { clearAllCache(); loadStats(); } },
+                                    { text: 'Refresh', style: 'destructive', onPress: () => { clearAllCache(); loadStats(); } },
                                 ])}
                                 activeOpacity={0.7}
                             >
@@ -327,8 +336,8 @@ export default function SettingsScreen() {
                                     <Ionicons name="refresh-outline" size={18} color="#F59E0B" />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={s.rowTitle}>Clear Cached Data</Text>
-                                    <Text style={s.caption}>Remove locally stored results</Text>
+                                    <Text style={s.rowTitle}>Refresh My Data</Text>
+                                    <Text style={s.caption}>Force a fresh sync next time you open</Text>
                                 </View>
                             </TouchableOpacity>
                             <View style={s.divider} />
@@ -337,65 +346,9 @@ export default function SettingsScreen() {
                                     <Ionicons name="trash-outline" size={18} color="#EF4444" />
                                 </View>
                                 <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={[s.rowTitle, { color: '#EF4444' }]}>Delete My Data</Text>
-                                    <Text style={s.caption}>Remove all data and reset app</Text>
+                                    <Text style={[s.rowTitle, { color: '#EF4444' }]}>Reset App</Text>
+                                    <Text style={s.caption}>Wipe everything and start over</Text>
                                 </View>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* ── Developer ── */}
-                    <View style={s.section}>
-                        <Text style={s.sectionLabel}>DEVELOPER</Text>
-                        <View style={s.card}>
-                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://github.com/AtulSahu778')} activeOpacity={0.7}>
-                                <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
-                                    <Ionicons name="logo-github" size={18} color="#9CA3AF" />
-                                </View>
-                                <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={s.rowTitle}>GitHub</Text>
-                                    <Text style={s.caption}>@AtulSahu778</Text>
-                                </View>
-                                <Ionicons name="open-outline" size={15} color="#374151" />
-                            </TouchableOpacity>
-                            <View style={s.divider} />
-                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://www.linkedin.com/in/atulsahu/')} activeOpacity={0.7}>
-                                <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
-                                    <Ionicons name="logo-linkedin" size={18} color="#9CA3AF" />
-                                </View>
-                                <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={s.rowTitle}>LinkedIn</Text>
-                                    <Text style={s.caption}>@atulsahu</Text>
-                                </View>
-                                <Ionicons name="open-outline" size={15} color="#374151" />
-                            </TouchableOpacity>
-                            <View style={s.divider} />
-                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://instagram.com/ofc_atul')} activeOpacity={0.7}>
-                                <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
-                                    <Ionicons name="logo-instagram" size={18} color="#9CA3AF" />
-                                </View>
-                                <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={s.rowTitle}>Instagram</Text>
-                                    <Text style={s.caption}>@ofc_atul</Text>
-                                </View>
-                                <Ionicons name="open-outline" size={15} color="#374151" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {/* ── About ── */}
-                    <View style={s.section}>
-                        <Text style={s.sectionLabel}>ABOUT</Text>
-                        <View style={s.card}>
-                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://sxcran.ac.in/Student/AttendanceSummary')} activeOpacity={0.7}>
-                                <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
-                                    <Ionicons name="globe-outline" size={18} color="#9CA3AF" />
-                                </View>
-                                <View style={{ flex: 1, marginLeft: 14 }}>
-                                    <Text style={s.rowTitle}>College Portal</Text>
-                                    <Text style={s.caption}>sxcran.ac.in</Text>
-                                </View>
-                                <Ionicons name="open-outline" size={15} color="#374151" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -403,13 +356,30 @@ export default function SettingsScreen() {
                     {/* ── Disclaimer ── */}
                     <View style={s.section}>
                         <Text style={s.sectionLabel}>DISCLAIMER</Text>
-                        <View style={[s.card, { padding: 16, backgroundColor: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.1)' }]}>
+                        <View style={[s.card, { padding: 16, backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)' }]}>
                             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-                                <Ionicons name="information-circle-outline" size={20} color="#9CA3AF" style={{ marginTop: 2 }} />
+                                <Ionicons name="shield-half-outline" size={18} color="#6B7280" style={{ marginTop: 2 }} />
                                 <Text style={[s.disclaimerText, { flex: 1 }]}>
-                                    AttendEase is an unofficial, independent tool created strictly for educational purposes to help students track their own attendance. This application is not affiliated with, endorsed by, or connected to St. Xavier's College, Ranchi. No intellectual property of the college is used or harmed.
+                                    AttendEase is an independent, unofficial app built to help students track their attendance. It is not affiliated with, authorized by, or officially endorsed by St. Xavier's College, Ranchi.
                                 </Text>
                             </View>
+                        </View>
+                    </View>
+
+                    {/* ── Portfolio ── */}
+                    <View style={s.section}>
+                        <Text style={s.sectionLabel}>PORTFOLIO</Text>
+                        <View style={s.card}>
+                            <TouchableOpacity style={s.rowItem} onPress={() => Linking.openURL('https://atulsahu.in')} activeOpacity={0.7}>
+                                <View style={[s.rowIcon, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
+                                    <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 14 }}>
+                                    <Text style={s.rowTitle}>My Portfolio</Text>
+                                    <Text style={s.caption}>atulsahu.in</Text>
+                                </View>
+                                <Ionicons name="open-outline" size={15} color="#374151" />
+                            </TouchableOpacity>
                         </View>
                     </View>
 
